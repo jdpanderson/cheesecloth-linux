@@ -6,9 +6,9 @@
 # CHEESECLOTH_REPO:
 #   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
 pkgname=cheesecloth
-pkgver=0.4.0pre0
+pkgver=0.4.0
 pkgrel=1
-_ref=tag=v0.4.0pre0
+_ref=tag=v0.4.0
 pkgdesc='A lightweight, loose mesh: a peer-to-peer WireGuard cluster'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jdpanderson/cheesecloth'

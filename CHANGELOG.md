@@ -7,6 +7,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.4.0-1] - 2026-10-11
+
+### Changed
+
+- The packages build cheesecloth 0.4.0.
+
 ## [0.4.0pre0-1] - 2026-10-11
 
 A test of the release process. It packages cheesecloth 0.4.0pre0.
