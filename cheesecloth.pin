@@ -1,2 +1,2 @@
-# The cheesecloth commit that the packages build. See README.md.
-commit = "38f056a4c6c5dab1d8ed318184401dcb94510bdf"
+# The cheesecloth release that the packages build. See README.md.
+release = "0.4.0pre0"

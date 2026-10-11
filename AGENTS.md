@@ -36,18 +36,23 @@ The agent works without permission prompts where it can:
   systemd unit, `/etc/default/cheesecloth` and its docs live there; see its
   `docs/REPOSITORIES.md`.
 - The packages build cheesecloth from source, as Debian and Arch expect.
-- `cheesecloth.pin` pins the cheesecloth commit that the packages build.
-  `_commit` in `arch/PKGBUILD` must match it. See
+- `cheesecloth.pin` pins the cheesecloth release (or commit) that the
+  packages build. `_ref` in `arch/PKGBUILD` must match it. See
   [README.md](README.md#the-pin-file).
+- A tag `v<release>-<revision>` publishes the packages. See
+  [README.md](README.md#releasing).
 - For work that also changes cheesecloth, change and merge it there first,
   then move the pin here.
 
 ## Checks
 All checks run in CI (`.github/workflows/ci.yml`):
 - **Lint:** actionlint on the workflow.
-- **Pin:** the PKGBUILD's commit matches `cheesecloth.pin`, and the
-  PKGBUILD and `debian/changelog` name the version at that commit.
+- **Pin:** the PKGBUILD's `_ref` matches `cheesecloth.pin`, the PKGBUILD
+  and `debian/changelog` name the pinned version and the same revision, and
+  a tag matches both.
 - **Debian:** builds the package for amd64 and arm64 in a Debian 13
   container, checks its files and installs it.
 - **Arch:** builds the package for x86_64 in an Arch container, checks its
   files and installs it.
+- **Release** (tags only): signs the Arch packages, publishes the release,
+  and checks that GitHub kept the file names.

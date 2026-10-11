@@ -1,12 +1,14 @@
 # Maintainer: Jonathan Anderson <janderson@janderson.ca>
-# Builds the cheesecloth commit in _commit, which must match cheesecloth.pin:
+# Builds the cheesecloth tag or commit in _ref, which must match
+# cheesecloth.pin:
 #   cd arch && makepkg -si
-# To build from a local checkout that has that commit, set CHEESECLOTH_REPO:
+# To build from a local checkout that has that tag or commit, set
+# CHEESECLOTH_REPO:
 #   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
 pkgname=cheesecloth
-pkgver=0.3.0
+pkgver=0.4.0pre0
 pkgrel=1
-_commit=38f056a4c6c5dab1d8ed318184401dcb94510bdf
+_ref=tag=v0.4.0pre0
 pkgdesc='A lightweight, loose mesh: a peer-to-peer WireGuard cluster'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jdpanderson/cheesecloth'
@@ -17,7 +19,7 @@ makedepends=('cargo' 'git')
 optdepends=('wireguard-tools: inspect the interface with wg')
 backup=('etc/default/cheesecloth')
 options=('!lto')
-source=("$pkgname::git+${CHEESECLOTH_REPO:-$url.git}#commit=$_commit")
+source=("$pkgname::git+${CHEESECLOTH_REPO:-$url.git}#$_ref")
 b2sums=('SKIP')
 
 prepare() {

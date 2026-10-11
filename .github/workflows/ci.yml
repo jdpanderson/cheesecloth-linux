@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -27,20 +28,21 @@ jobs:
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
           "$(go env GOPATH)/bin/actionlint"
 
-  # Reads the pin once, so the other jobs build the same commit, and checks
+  # Reads the pin once, so the other jobs build the same source, and checks
   # that the packages agree with it.
   pin:
     name: Pin
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      commit: ${{ steps.pin.outputs.commit }}
+      ref: ${{ steps.pin.outputs.ref }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # CI reads only the commit form for now; the release form comes with the
-      # release job. See README.md.
+      # The format is set in cheesecloth's docs/REPOSITORIES.md. This
+      # repository builds from source, so a release pin lists no binaries.
       - name: Read cheesecloth.pin
         id: pin
         shell: python3 {0}
@@ -48,45 +50,86 @@ jobs:
           import os, re, sys, tomllib
           with open("cheesecloth.pin", "rb") as f:
               pin = tomllib.load(f)
-          if pin.keys() != {"commit"}:
-              sys.exit("::error::cheesecloth.pin must hold only \"commit\"")
-          commit = pin["commit"]
-          if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
-              sys.exit(f"::error::the commit in cheesecloth.pin is not a full SHA-1: {commit}")
+          if pin.keys() == {"commit"}:
+              commit = pin["commit"]
+              if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+                  sys.exit(f"::error::the commit in cheesecloth.pin is not a full commit id: {commit}")
+              ref = commit
+          elif pin.keys() == {"release"}:
+              release = pin["release"]
+              if not isinstance(release, str) or not re.fullmatch(r"[0-9][0-9A-Za-z.-]*", release):
+                  sys.exit(f"::error::the release in cheesecloth.pin is not a version: {release}")
+              ref = f"refs/tags/v{release}"
+          else:
+              sys.exit("::error::cheesecloth.pin must hold only \"commit\" or only \"release\"")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"commit={commit}\n")
+              f.write(f"ref={ref}\n")
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jdpanderson/cheesecloth
-          ref: ${{ steps.pin.outputs.commit }}
+          ref: ${{ steps.pin.outputs.ref }}
           path: cheesecloth
           sparse-checkout: Cargo.toml
           sparse-checkout-cone-mode: false
           persist-credentials: false
       # The PKGBUILD holds its own copy of the pin, and both packages name
-      # the version they package. They must match cheesecloth.pin and the
-      # version at that commit.
+      # the version they package. They must match cheesecloth.pin, the
+      # version in cheesecloth's Cargo.toml, and each other. A tag here must
+      # name the pinned release and the package revision.
       - name: Check the packages match the pin
-        env:
-          COMMIT: ${{ steps.pin.outputs.commit }}
+        id: check
+        shell: python3 {0}
         run: |
-          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' cheesecloth/Cargo.toml | head -n1)
-          read -r pkgver pkgcommit < <(bash -c 'source arch/PKGBUILD && echo "$pkgver $_commit"')
-          debver=$(dpkg-parsechangelog -S Version)
-          status=0
-          if [[ "$pkgcommit" != "$COMMIT" ]]; then
-            echo "::error::_commit in arch/PKGBUILD is $pkgcommit, not $COMMIT"
-            status=1
-          fi
-          if [[ "$pkgver" != "$version" ]]; then
-            echo "::error::pkgver in arch/PKGBUILD is $pkgver, not $version"
-            status=1
-          fi
-          if [[ "${debver%-*}" != "$version" ]]; then
-            echo "::error::debian/changelog has $debver, not $version-<revision>"
-            status=1
-          fi
-          exit "$status"
+          import os, re, subprocess, sys, tomllib
+          with open("cheesecloth.pin", "rb") as f:
+              pin = tomllib.load(f)
+          with open("cheesecloth/Cargo.toml", "rb") as f:
+              version = tomllib.load(f)["workspace"]["package"]["version"]
+          if "commit" in pin:
+              ref, suffix = f"commit={pin['commit']}", ""
+          else:
+              release = pin["release"]
+              ref = f"tag=v{release}"
+              # The release is the version, maybe with a suffix such as "pre0"
+              # or "-rc1", as cheesecloth's release check allows.
+              suffix = release.removeprefix(version)
+              if suffix == release or not re.fullmatch(r"(-?[A-Za-z][0-9A-Za-z.]*)?", suffix):
+                  sys.exit(f"::error::release {release} in cheesecloth.pin does not match version {version}")
+          # A suffix sorts before the plain version: "0.4.0~pre0" for Debian,
+          # and "0.4.0pre0" for pacman, which has no "-" in pkgver.
+          suffix = suffix.removeprefix("-")
+          debian_version = version + (f"~{suffix}" if suffix else "")
+          arch_version = version + suffix
+
+          pkgbuild = subprocess.run(
+              ["bash", "-c", 'source arch/PKGBUILD && printf "%s\\n" "$_ref" "$pkgver" "$pkgrel"'],
+              check=True, capture_output=True, text=True).stdout.split("\n")
+          pkg_ref, pkgver, pkgrel = pkgbuild[:3]
+          changelog = subprocess.run(["dpkg-parsechangelog", "-S", "Version"],
+              check=True, capture_output=True, text=True).stdout.strip()
+          deb_upstream, _, deb_revision = changelog.rpartition("-")
+
+          errors = []
+          if pkg_ref != ref:
+              errors.append(f"_ref in arch/PKGBUILD is {pkg_ref}, not {ref}")
+          if pkgver != arch_version:
+              errors.append(f"pkgver in arch/PKGBUILD is {pkgver}, not {arch_version}")
+          if deb_upstream != debian_version:
+              errors.append(f"debian/changelog has {changelog}, not {debian_version}-<revision>")
+          if deb_revision != pkgrel:
+              errors.append(f"debian/changelog has revision {deb_revision}, but pkgrel is {pkgrel}")
+          if os.environ["GITHUB_REF_TYPE"] == "tag":
+              tag = os.environ["GITHUB_REF_NAME"]
+              if "release" not in pin:
+                  errors.append(f"tag {tag} needs a release in cheesecloth.pin, not a commit")
+              elif tag != f"v{pin['release']}-{pkgrel}":
+                  errors.append(f"tag {tag} is not v{pin['release']}-{pkgrel}")
+          for error in errors:
+              print(f"::error::{error}")
+          if errors:
+              sys.exit(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"prerelease={'true' if suffix else 'false'}\n")
 
   debian:
     name: Debian 13 (${{ matrix.arch }})
@@ -119,7 +162,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jdpanderson/cheesecloth
-          ref: ${{ needs.pin.outputs.commit }}
+          ref: ${{ needs.pin.outputs.ref }}
           path: cheesecloth
           persist-credentials: false
       # Older cheesecloth commits still have their own debian/; this one
@@ -164,8 +207,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # makepkg fetches the commit in the PKGBUILD; the pin job checked that
-      # it is the pinned one. cheesecloth's own CI runs the tests.
+      # makepkg fetches the tag or commit in the PKGBUILD; the pin job checked
+      # that it is the pinned one. cheesecloth's own CI runs the tests.
       - name: Build package
         working-directory: arch
         run: |
@@ -189,3 +232,67 @@ jobs:
           path: dist/*.pkg.tar.zst
           if-no-files-found: error
           compression-level: 0
+
+  # A tag v<release>-<revision>, such as v0.4.0-1, publishes the packages. The
+  # pin job checked that the tag matches the pin and the packages.
+  release:
+    name: Publish release
+    if: github.ref_type == 'tag'
+    needs: [lint, pin, debian, arch]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          pattern: cheesecloth-*
+          merge-multiple: true
+      # pacman -U <url> needs <url>.sig next to the package. See README.md.
+      # The key is used only here, so jobs that run cargo build scripts never
+      # see it.
+      - name: Sign the Arch packages
+        env:
+          ARCH_SIGNING_KEY: ${{ secrets.ARCH_SIGNING_KEY }}
+        run: |
+          if [[ -z "$ARCH_SIGNING_KEY" ]]; then
+            echo "::error::the ARCH_SIGNING_KEY secret is not set"
+            exit 1
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          install -d -m 700 "$GNUPGHOME"
+          gpg --batch --import <<< "$ARCH_SIGNING_KEY"
+          for package in dist/*.pkg.tar.zst; do
+            gpg --batch --yes --detach-sign --no-armor "$package"
+            gpg --batch --verify "$package.sig" "$package"
+          done
+          rm -rf "$GNUPGHOME"
+      - name: Attach packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.pin.outputs.prerelease }}
+        run: |
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          ls -l
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" --clobber -- *
+          else
+            flags=()
+            [[ "$PRERELEASE" == true ]] && flags+=(--prerelease)
+            gh release create "$TAG" --verify-tag --generate-notes "${flags[@]}" -- *
+          fi
+      # GitHub renames assets with some characters in their names. SHA256SUMS
+      # and the install docs use the file names, so they must not change.
+      - name: Check the asset names
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > "$RUNNER_TEMP/assets"
+          (cd dist && printf '%s\n' *) | sort > "$RUNNER_TEMP/files"
+          diff -u "$RUNNER_TEMP/files" "$RUNNER_TEMP/assets"

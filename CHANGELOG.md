@@ -7,17 +7,23 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.4.0pre0-1] - 2026-10-11
+
+A test of the release process. It packages cheesecloth 0.4.0pre0.
+
 ### Changed
 
 - The Debian package and the PKGBUILD moved here from the cheesecloth
   repository, with their history. They still build cheesecloth from source.
-- The Debian package uses the `3.0 (quilt)` format and has its own revision,
-  starting at `0.3.0-1`.
-- The PKGBUILD builds a fixed cheesecloth commit from GitHub, in place of the
-  checkout it sat in.
+- The Debian package uses the `3.0 (quilt)` format and has its own revision.
+  A pre-release sorts before its release, such as `0.4.0~pre0-1`.
+- The PKGBUILD builds a fixed cheesecloth tag or commit from GitHub, in place
+  of the checkout it sat in.
+- Releases and Arch package signing moved here, with the same signing key.
 
 ### Added
 
-- `cheesecloth.pin`, the cheesecloth commit that the packages build.
+- `cheesecloth.pin`, the cheesecloth release or commit that the packages
+  build.
 - CI builds the Debian package for arm64 too, and installs both packages
   after it builds them.
