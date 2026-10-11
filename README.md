@@ -43,7 +43,7 @@ access, because cargo downloads the crates that `Cargo.lock` names.
 
 ```sh
 git clone https://github.com/jdpanderson/cheesecloth.git
-git -C cheesecloth checkout <commit from cheesecloth.json>
+git -C cheesecloth checkout <commit from cheesecloth.pin>
 rm -rf cheesecloth/debian
 cp -r debian cheesecloth/
 cd cheesecloth
@@ -68,16 +68,17 @@ CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
 
 ## The pin file
 
-`cheesecloth.json` names the cheesecloth commit that the packages build:
+`cheesecloth.pin` names the cheesecloth commit that the packages build. Its
+format is set in cheesecloth's `docs/REPOSITORIES.md`:
 
-```json
-{ "commit": "<full commit SHA-1>" }
+```toml
+commit = "<40-character commit id>"
 ```
 
 To move the pin, change it in three places, which CI checks against each
 other:
 
-1. `commit` in `cheesecloth.json`;
+1. `commit` in `cheesecloth.pin`;
 2. `_commit` in `arch/PKGBUILD`, and `pkgver` if the version at that commit
    changed (reset `pkgrel` to 1 when it does);
 3. `debian/changelog`, with a new entry if the version changed, such as
@@ -87,8 +88,10 @@ A packaging change with no new cheesecloth version raises the revision:
 `pkgrel` in the PKGBUILD, and a new `debian/changelog` entry such as
 `0.4.0-2`.
 
-When cheesecloth tags a release, the pin will name that release in place of a
-commit. Before a package release, the pin must name a release. For work that
+The pin can also name a cheesecloth release, as `release = "0.4.0"`. This
+repository builds from source, so it lists no binaries. CI does not read this
+form yet; it comes with the release job. Before a package release, the pin
+must name a release. For work that
 spans both repositories, change cheesecloth first and merge it, then pin that
 commit here.
 

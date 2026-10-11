@@ -1,5 +1,5 @@
 # Maintainer: Jonathan Anderson <janderson@janderson.ca>
-# Builds the cheesecloth commit in _commit, which must match cheesecloth.json:
+# Builds the cheesecloth commit in _commit, which must match cheesecloth.pin:
 #   cd arch && makepkg -si
 # To build from a local checkout that has that commit, set CHEESECLOTH_REPO:
 #   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si

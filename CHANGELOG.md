@@ -18,6 +18,6 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ### Added
 
-- `cheesecloth.json`, the cheesecloth commit that the packages build.
+- `cheesecloth.pin`, the cheesecloth commit that the packages build.
 - CI builds the Debian package for arm64 too, and installs both packages
   after it builds them.
