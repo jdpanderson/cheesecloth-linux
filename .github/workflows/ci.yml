@@ -268,6 +268,16 @@ jobs:
             gpg --batch --verify "$package.sig" "$package"
           done
           rm -rf "$GNUPGHOME"
+      # GitHub turns "~" in an asset name into ".", so a Debian pre-release
+      # such as cheesecloth_0.4.0~pre0-1_amd64.deb is renamed here, before
+      # SHA256SUMS is made. apt reads the version from the package, not the
+      # file name.
+      - name: Name the Debian packages for GitHub
+        run: |
+          for package in dist/*~*.deb; do
+            [[ -e "$package" ]] || continue
+            mv -- "$package" "${package//\~/.}"
+          done
       - name: Attach packages to the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -286,7 +296,8 @@ jobs:
             gh release create "$TAG" --verify-tag --generate-notes "${flags[@]}" -- *
           fi
       # GitHub renames assets with some characters in their names. SHA256SUMS
-      # and the install docs use the file names, so they must not change.
+      # and the install docs use the file names, so they must not change
+      # after the step that names the Debian packages.
       - name: Check the asset names
         env:
           GH_TOKEN: ${{ github.token }}

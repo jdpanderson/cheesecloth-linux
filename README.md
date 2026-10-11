@@ -19,6 +19,11 @@ from a CI run's **Artifacts**:
   sudo apt install ./cheesecloth_<version>_amd64.deb
   ```
 
+  GitHub does not allow `~` in a file name, so a pre-release such as
+  `0.4.0~pre0-1` has a `.` there in its release file name:
+  `cheesecloth_0.4.0.pre0-1_amd64.deb`. The package's version is still
+  `0.4.0~pre0-1`.
+
 - `cheesecloth-<version>-x86_64.pkg.tar.zst` for Arch Linux. Released
   packages are signed; trust the key once, as described in
   [Signing](#signing), then install from the release URL:
