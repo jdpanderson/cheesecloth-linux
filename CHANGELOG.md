@@ -20,6 +20,8 @@ A test of the release process. It packages cheesecloth 0.4.0pre0.
 - The PKGBUILD builds a fixed cheesecloth tag or commit from GitHub, in place
   of the checkout it sat in.
 - Releases and Arch package signing moved here, with the same signing key.
+  A Debian pre-release has `.` in place of `~` in its release file name,
+  because GitHub does not allow `~`.
 
 ### Added
 
