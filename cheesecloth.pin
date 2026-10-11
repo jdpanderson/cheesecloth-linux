@@ -1,2 +1,2 @@
 # The cheesecloth release that the packages build. See README.md.
-release = "0.4.0pre0"
+release = "0.4.0"
