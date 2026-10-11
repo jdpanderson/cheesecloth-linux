@@ -1,11 +1,15 @@
 # Maintainer: Jonathan Anderson <janderson@janderson.ca>
-# Builds the commit checked out in this repository:
-#   cd packaging/arch && makepkg -si
+# Builds the cheesecloth commit in _commit, which must match cheesecloth.json:
+#   cd arch && makepkg -si
+# To build from a local checkout that has that commit, set CHEESECLOTH_REPO:
+#   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
 pkgname=cheesecloth
-pkgver=0.0.0
+pkgver=0.3.0
 pkgrel=1
+_commit=38f056a4c6c5dab1d8ed318184401dcb94510bdf
 pkgdesc='A lightweight, loose mesh: a peer-to-peer WireGuard cluster'
 arch=('x86_64' 'aarch64')
+url='https://github.com/jdpanderson/cheesecloth'
 # Cheesecloth is MIT; the others are the bundled crates' (THIRD-PARTY-NOTICES.md).
 license=('MIT' 'Apache-2.0' 'BSD-2-Clause' 'BSD-3-Clause' 'ISC' 'MPL-2.0' 'Unicode-3.0')
 depends=('gcc-libs' 'glibc' 'resolvconf')
@@ -13,15 +17,8 @@ makedepends=('cargo' 'git')
 optdepends=('wireguard-tools: inspect the interface with wg')
 backup=('etc/default/cheesecloth')
 options=('!lto')
-source=("$pkgname::git+file://$(realpath "$startdir/../..")#commit=$(git -C "$startdir/../.." rev-parse HEAD)")
+source=("$pkgname::git+${CHEESECLOTH_REPO:-$url.git}#commit=$_commit")
 b2sums=('SKIP')
-
-pkgver() {
-  cd "$pkgname"
-  local version
-  version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)
-  printf '%s.r%s.g%s' "$version" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-}
 
 prepare() {
   cd "$pkgname"

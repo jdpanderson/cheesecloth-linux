@@ -1,0 +1,9 @@
+/target/
+/dist/
+# The cheesecloth checkout that CI builds from.
+/cheesecloth/
+# makepkg output.
+/arch/cheesecloth/
+/arch/src/
+/arch/pkg/
+/arch/*.pkg.tar.*

@@ -1,4 +1,7 @@
 #!/usr/bin/make -f
+# Runs in a cheesecloth source tree with this debian/ directory copied into
+# it. See README.md.
+#
 # Builds with cargo and the crates from crates.io, so it needs network access
 # (Cargo.lock pins every version).
 
