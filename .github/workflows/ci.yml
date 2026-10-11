@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint"
+
+  # Reads the pin once, so the other jobs build the same commit, and checks
+  # that the packages agree with it.
+  pin:
+    name: Pin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.pin.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Until cheesecloth releases attach binaries, the pin names a commit.
+      # See README.md.
+      - name: Read cheesecloth.json
+        id: pin
+        run: |
+          if ! jq -e 'keys == ["commit"]' cheesecloth.json > /dev/null; then
+            echo "::error::cheesecloth.json must hold only \"commit\""
+            exit 1
+          fi
+          commit=$(jq -r .commit cheesecloth.json)
+          if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::the commit in cheesecloth.json is not a full SHA-1: $commit"
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jdpanderson/cheesecloth
+          ref: ${{ steps.pin.outputs.commit }}
+          path: cheesecloth
+          sparse-checkout: Cargo.toml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      # The PKGBUILD holds its own copy of the pin, and both packages name
+      # the version they package. They must match cheesecloth.json and the
+      # version at that commit.
+      - name: Check the packages match the pin
+        env:
+          COMMIT: ${{ steps.pin.outputs.commit }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' cheesecloth/Cargo.toml | head -n1)
+          read -r pkgver pkgcommit < <(bash -c 'source arch/PKGBUILD && echo "$pkgver $_commit"')
+          debver=$(dpkg-parsechangelog -S Version)
+          status=0
+          if [[ "$pkgcommit" != "$COMMIT" ]]; then
+            echo "::error::_commit in arch/PKGBUILD is $pkgcommit, not $COMMIT"
+            status=1
+          fi
+          if [[ "$pkgver" != "$version" ]]; then
+            echo "::error::pkgver in arch/PKGBUILD is $pkgver, not $version"
+            status=1
+          fi
+          if [[ "${debver%-*}" != "$version" ]]; then
+            echo "::error::debian/changelog has $debver, not $version-<revision>"
+            status=1
+          fi
+          exit "$status"
+
+  debian:
+    name: Debian 13 (${{ matrix.arch }})
+    needs: pin
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    container: debian:trixie
+    timeout-minutes: 60
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      # Trixie's cargo is older than cheesecloth's rust-version.
+      - name: Install build dependencies
+        run: |
+          printf '%s\n' 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential debhelper git ca-certificates procps \
+            cargo/trixie-backports rustc/trixie-backports
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jdpanderson/cheesecloth
+          ref: ${{ needs.pin.outputs.commit }}
+          path: cheesecloth
+          persist-credentials: false
+      # Older cheesecloth commits still have their own debian/; this one
+      # replaces it.
+      - name: Add debian/ to the source
+        run: |
+          rm -rf cheesecloth/debian
+          cp -r debian cheesecloth/
+      # cheesecloth's own CI runs the tests.
+      - name: Build package
+        working-directory: cheesecloth
+        env:
+          DEB_BUILD_OPTIONS: nocheck
+        run: dpkg-buildpackage -us -uc -b -jauto
+      - name: Check package
+        run: |
+          mkdir dist
+          cp cheesecloth*.deb dist/
+          dpkg-deb --info dist/cheesecloth_*.deb
+          dpkg-deb --extract dist/cheesecloth_*.deb "$RUNNER_TEMP/package"
+          test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service"
+          test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
+          apt-get install -y ./dist/cheesecloth_*.deb
+          cheesecloth --version
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cheesecloth-debian13-${{ matrix.arch }}
+          path: dist/*.deb
+          if-no-files-found: error
+          compression-level: 0
+
+  # There is no Arch Linux container for arm64, so only x86_64 is built.
+  arch:
+    name: Arch Linux (x86_64)
+    needs: pin
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    timeout-minutes: 60
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm --needed git rust openresolv
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # makepkg fetches the commit in the PKGBUILD; the pin job checked that
+      # it is the pinned one. cheesecloth's own CI runs the tests.
+      - name: Build package
+        working-directory: arch
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- makepkg --noconfirm --nocheck
+      - name: Check package
+        run: |
+          mkdir dist
+          cp arch/cheesecloth-*.pkg.tar.zst dist/
+          pacman -Qip dist/cheesecloth-[0-9]*.pkg.tar.zst
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xf dist/cheesecloth-[0-9]*.pkg.tar.zst -C "$RUNNER_TEMP/package"
+          test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service"
+          test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
+          pacman -U --noconfirm dist/cheesecloth-[0-9]*.pkg.tar.zst
+          cheesecloth --version
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cheesecloth-arch-x86_64
+          path: dist/*.pkg.tar.zst
+          if-no-files-found: error
+          compression-level: 0
