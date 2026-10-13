@@ -148,21 +148,24 @@ jobs:
               pin = tomllib.load(f)
           with open("cheesecloth/Cargo.toml", "rb") as f:
               version = tomllib.load(f)["workspace"]["package"]["version"]
+          base_version, _, cargo_suffix = version.partition("-")
           if "commit" in pin:
-              ref, suffix = f"commit={pin['commit']}", ""
+              ref, suffix = f"commit={pin['commit']}", cargo_suffix
           else:
               release = pin["release"]
               ref = f"tag=v{release}"
-              # The release is the version, maybe with a suffix such as "pre0"
-              # or "-rc1", as cheesecloth's release check allows.
-              suffix = release.removeprefix(version)
-              if suffix == release or not re.fullmatch(r"(-?[A-Za-z][0-9A-Za-z.]*)?", suffix):
+              # Old tags may add a suffix to a plain Cargo version. A Cargo
+              # pre-release already has its full suffix in Cargo.toml.
+              release_suffix = release.removeprefix(base_version)
+              if (release_suffix == release or
+                      not re.fullmatch(r"(-?[A-Za-z][0-9A-Za-z.]*)?", release_suffix) or
+                      (cargo_suffix and release != version)):
                   sys.exit(f"::error::release {release} in cheesecloth.pin does not match version {version}")
+              suffix = release_suffix.removeprefix("-")
           # A suffix sorts before the plain version: "0.4.0~pre0" for Debian,
           # and "0.4.0pre0" for pacman, which has no "-" in pkgver.
-          suffix = suffix.removeprefix("-")
-          debian_version = version + (f"~{suffix}" if suffix else "")
-          arch_version = version + suffix
+          debian_version = base_version + (f"~{suffix}" if suffix else "")
+          arch_version = base_version + suffix
 
           pkgbuild = subprocess.run(
               ["bash", "-c", 'source arch/PKGBUILD && printf "%s\\n" "$_ref" "$pkgver" "$pkgrel"'],
