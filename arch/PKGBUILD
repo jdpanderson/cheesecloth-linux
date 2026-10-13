@@ -5,46 +5,62 @@
 # To build from a local checkout that has that tag or commit, set
 # CHEESECLOTH_REPO:
 #   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
-pkgname=cheesecloth
+pkgbase=cheesecloth
+pkgname=('cheesecloth' 'gnome-shell-extension-cheesecloth')
 pkgver=0.4.0
-pkgrel=1
-_ref=tag=v0.4.0
+pkgrel=4
+_ref=commit=6e7893a6de366fea6d165097b026a200cd2f7372
 pkgdesc='A lightweight, loose mesh: a peer-to-peer WireGuard cluster'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jdpanderson/cheesecloth'
 # Cheesecloth is MIT; the others are the bundled crates' (THIRD-PARTY-NOTICES.md).
 license=('MIT' 'Apache-2.0' 'BSD-2-Clause' 'BSD-3-Clause' 'ISC' 'MPL-2.0' 'Unicode-3.0')
-depends=('gcc-libs' 'glibc' 'resolvconf')
 makedepends=('cargo' 'git')
-optdepends=('wireguard-tools: inspect the interface with wg')
-backup=('etc/default/cheesecloth')
 options=('!lto')
-source=("$pkgname::git+${CHEESECLOTH_REPO:-$url.git}#$_ref")
+source=("cheesecloth::git+${CHEESECLOTH_REPO:-$url.git}#$_ref")
 b2sums=('SKIP')
 
 prepare() {
-  cd "$pkgname"
+  cd cheesecloth
   cargo fetch --locked --target "$(rustc --print host-tuple)"
 }
 
 build() {
-  cd "$pkgname"
+  cd cheesecloth
   export CARGO_TARGET_DIR=target
   cargo build --frozen --release -p cheesecloth
 }
 
 check() {
-  cd "$pkgname"
+  cd cheesecloth
   export CARGO_TARGET_DIR=target
   cargo test --frozen --release --workspace
 }
 
-package() {
-  cd "$pkgname"
+package_cheesecloth() {
+  depends=('gcc-libs' 'glibc' 'resolvconf')
+  optdepends=('wireguard-tools: inspect the interface with wg')
+  backup=('etc/default/cheesecloth')
+  cd cheesecloth
   install -Dm755 target/release/cheesecloth -t "$pkgdir/usr/bin"
   install -Dm644 packaging/cheesecloth.service -t "$pkgdir/usr/lib/systemd/system"
   install -Dm644 packaging/cheesecloth.default "$pkgdir/etc/default/cheesecloth"
   install -Dm644 README.md -t "$pkgdir/usr/share/doc/$pkgname"
   install -Dm644 docs/*.md -t "$pkgdir/usr/share/doc/$pkgname/docs"
   install -Dm644 LICENSE THIRD-PARTY-NOTICES.md -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+package_gnome-shell-extension-cheesecloth() {
+  pkgdesc='GNOME Shell status indicator for cheesecloth'
+  arch=('any')
+  depends=("cheesecloth=$pkgver-$pkgrel" 'gnome-shell' 'gjs' 'gtk4' 'libadwaita' 'systemd')
+  local extension="$pkgdir/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca"
+  install -Dm644 "$startdir/../gnome/metadata.json" "$extension/metadata.json"
+  install -Dm644 "$startdir/../gnome/dist/extension.js" "$extension/extension.js"
+  install -Dm644 "$startdir/../gnome/dist/api.js" "$extension/api.js"
+  install -Dm644 "$startdir/../gnome/dist/display.js" "$extension/display.js"
+  install -Dm644 "$startdir/../gnome/dist/protocol.js" "$extension/protocol.js"
+  install -Dm644 "$startdir/../gnome/dist/app.js" "$extension/app.js"
+  install -Dm644 "$startdir/../gnome/cheesecloth.conf" "$pkgdir/usr/lib/sysusers.d/cheesecloth.conf"
+  install -Dm644 "$startdir/../gnome/10-gnome.conf" "$pkgdir/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
 }

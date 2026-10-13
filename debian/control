@@ -16,3 +16,11 @@ Description: lightweight, loose mesh: a peer-to-peer WireGuard cluster
  cheesecloth joins machines into a WireGuard mesh with no external services.
  Members agree on membership through authenticated CASPaxos. Relays carry
  control messages; WireGuard traffic uses direct paths and NAT traversal.
+
+Package: gnome-shell-extension-cheesecloth
+Architecture: all
+Depends: ${misc:Depends}, cheesecloth (= ${source:Version}),
+ gnome-shell (>= 48), gjs, gir1.2-gtk-4.0, gir1.2-adw-1, systemd
+Description: GNOME Shell status indicator for cheesecloth
+ A panel indicator and GTK windows for inspecting and managing a Cheesecloth
+ network. Members of the cheesecloth group can use the daemon's local API.

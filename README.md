@@ -4,7 +4,9 @@ Debian and Arch Linux packages for
 [cheesecloth](https://github.com/jdpanderson/cheesecloth). Both build
 cheesecloth from source and install the binary, the systemd unit
 `cheesecloth.service`, and `/etc/default/cheesecloth` for the daemon's
-options. The unit and the options file come from cheesecloth.
+options. The unit and the options file come from cheesecloth. A separate
+`gnome-shell-extension-cheesecloth` package adds a GNOME panel indicator and
+GTK windows for the local API.
 
 ## Install
 
@@ -38,6 +40,35 @@ Then set the options in `/etc/default/cheesecloth` and start the service:
 sudo systemctl enable --now cheesecloth
 ```
 
+### GNOME desktop
+
+Install `gnome-shell-extension-cheesecloth_<version>_all.deb` with the daemon
+package on Debian, or `gnome-shell-extension-cheesecloth-<version>-any.pkg.tar.zst`
+with the daemon package on Arch. The extension package creates the
+`cheesecloth` group and adds `--api-group cheesecloth` to the system service.
+Add each desktop operator to the group, then restart the service and log out
+and back in so the group membership and new extension are visible:
+
+```sh
+sudo usermod -aG cheesecloth "$USER"
+sudo systemctl restart cheesecloth
+```
+
+Enable the extension in GNOME Extensions, or run
+`gnome-extensions enable cheesecloth@jdpanderson.ca`. Its panel icon opens a
+status menu; the menu opens separate windows for network actions. It uses the
+daemon's local socket and reads it only while the menu or a window is open.
+The daemon remains a system service when a window closes. Use `systemctl`
+as an administrator to stop it. Set `CHEESECLOTH_SOCKET` in the desktop
+session if the daemon uses a custom socket path. If `/etc/default/cheesecloth`
+already sets `--api-group`, remove that option before installing the extension
+package; its service drop-in supplies the `cheesecloth` group.
+
+The GNOME source is in `gnome/src/*.ts`. Run `npm install --prefix gnome`,
+then `npm run --prefix gnome build` after changing it. Commit the generated
+`gnome/dist/*.js` files with the source. Debian and Arch install those
+generated files, so package builds do not need Node.js.
+
 ## Building by hand
 
 ### Debian
@@ -52,6 +83,7 @@ trixie-backports) and network access, because cargo downloads the crates that
 git clone --branch v<release from cheesecloth.pin> https://github.com/jdpanderson/cheesecloth.git
 rm -rf cheesecloth/debian
 cp -r debian cheesecloth/
+cp -r gnome cheesecloth/
 cd cheesecloth
 dpkg-buildpackage -us -uc -b
 ```

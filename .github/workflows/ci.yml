@@ -27,6 +27,71 @@ jobs:
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
           "$(go env GOPATH)/bin/actionlint"
+      - name: Install GNOME build tool
+        run: npm install --prefix gnome --ignore-scripts --no-package-lock --no-audit --no-fund
+      - name: Check GNOME TypeScript and compiled JavaScript
+        run: |
+          npm run --prefix gnome check
+          npm run --prefix gnome build
+          git diff --exit-code -- gnome/dist
+          node --check gnome/dist/api.js
+          node --check gnome/dist/display.js
+          node --check gnome/dist/protocol.js
+          node --check gnome/dist/extension.js
+          node --check gnome/dist/app.js
+          npm run --prefix gnome test
+
+  gnome:
+    name: GNOME ${{ matrix.shell }} runtime
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shell: '48'
+            image: debian:trixie
+          - shell: '49'
+            image: fedora:43
+          - shell: '50'
+            image: fedora:44
+    steps:
+      - name: Install GNOME runtime and test tools
+        run: |
+          if command -v dnf; then
+            dnf install -y git nodejs npm gjs gnome-shell libadwaita gtk4 dbus-daemon dbus-tools mesa-dri-drivers xorg-x11-server-Xvfb xorg-x11-xauth shadow-utils
+          else
+            apt-get update
+            apt-get install -y --no-install-recommends git nodejs npm gjs gnome-shell gir1.2-adw-1 gir1.2-gtk-4.0 dbus-daemon dbus-bin libgl1-mesa-dri xvfb xauth passwd
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test GJS socket client
+        run: npm run --prefix gnome test:gjs
+      - name: Test Adwaita widgets
+        run: dbus-run-session -- xvfb-run -a gjs -m gnome/tests/widgets.gjs.mjs
+      - name: Test packaged Shell extension
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          # GNOME Shell uses the system bus for login and time limits.
+          install -d -m 755 /run/dbus
+          dbus-uuidgen --ensure
+          dbus-daemon --system --fork
+          test -S /run/dbus/system_bus_socket
+          mkdir -p target/gnome-runtime
+          chmod 700 target/gnome-runtime
+          install -Dm644 gnome/metadata.json /usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/metadata.json
+          install -Dm644 gnome/dist/*.js -t /usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca
+          useradd --create-home tester
+          chown -R tester:tester target
+          runuser -u tester -- dbus-send --system --print-reply --dest=org.freedesktop.DBus \
+            /org/freedesktop/DBus org.freedesktop.DBus.GetId
+          runuser -u tester -- env XDG_RUNTIME_DIR="$PWD/target/gnome-runtime" LIBGL_ALWAYS_SOFTWARE=1 \
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket \
+            dbus-run-session -- gnome-shell-test-tool --headless gnome/tests/shell.gjs.mjs
 
   # Reads the pin once, so the other jobs build the same source, and checks
   # that the packages agree with it.
@@ -171,6 +236,7 @@ jobs:
         run: |
           rm -rf cheesecloth/debian
           cp -r debian cheesecloth/
+          cp -r gnome cheesecloth/
       # cheesecloth's own CI runs the tests.
       - name: Build package
         working-directory: cheesecloth
@@ -180,11 +246,16 @@ jobs:
       - name: Check package
         run: |
           mkdir dist
-          cp cheesecloth*.deb dist/
+          cp ./*.deb dist/
           dpkg-deb --info dist/cheesecloth_*.deb
           dpkg-deb --extract dist/cheesecloth_*.deb "$RUNNER_TEMP/package"
           test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service"
           test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
+          dpkg-deb --info dist/gnome-shell-extension-cheesecloth_*.deb
+          dpkg-deb --extract dist/gnome-shell-extension-cheesecloth_*.deb "$RUNNER_TEMP/extension"
+          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/extension.js"
+          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/extension/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           apt-get install -y ./dist/cheesecloth_*.deb
           cheesecloth --version
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -218,12 +289,16 @@ jobs:
       - name: Check package
         run: |
           mkdir dist
-          cp arch/cheesecloth-*.pkg.tar.zst dist/
+          cp arch/*.pkg.tar.zst dist/
           pacman -Qip dist/cheesecloth-[0-9]*.pkg.tar.zst
           mkdir -p "$RUNNER_TEMP/package"
           tar -xf dist/cheesecloth-[0-9]*.pkg.tar.zst -C "$RUNNER_TEMP/package"
           test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service"
           test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
+          tar -xf dist/gnome-shell-extension-cheesecloth-*.pkg.tar.zst -C "$RUNNER_TEMP/package"
+          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/extension.js"
+          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           pacman -U --noconfirm dist/cheesecloth-[0-9]*.pkg.tar.zst
           cheesecloth --version
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -238,7 +313,7 @@ jobs:
   release:
     name: Publish release
     if: github.ref_type == 'tag'
-    needs: [lint, pin, debian, arch]
+    needs: [lint, gnome, pin, debian, arch]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

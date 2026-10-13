@@ -7,3 +7,4 @@
 /arch/src/
 /arch/pkg/
 /arch/*.pkg.tar.*
+/gnome/node_modules/
