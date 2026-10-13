@@ -89,10 +89,7 @@ jobs:
           chown -R tester:tester target
           runuser -u tester -- dbus-send --system --print-reply --dest=org.freedesktop.DBus \
             /org/freedesktop/DBus org.freedesktop.DBus.GetId
-          python3 -m dbusmock --system --template logind --exec \
-            runuser -u tester -- env XDG_RUNTIME_DIR="$PWD/target/gnome-runtime" LIBGL_ALWAYS_SOFTWARE=1 \
-              DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket \
-              dbus-run-session -- gnome-shell-test-tool --headless gnome/tests/shell.gjs.mjs
+          python3 -m dbusmock --system --template logind --exec gnome/tests/run-shell-test.sh
 
   # Reads the pin once, so the other jobs build the same source, and checks
   # that the packages agree with it.
