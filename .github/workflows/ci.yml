@@ -60,10 +60,10 @@ jobs:
       - name: Install GNOME runtime and test tools
         run: |
           if command -v dnf; then
-            dnf install -y git nodejs npm gjs gnome-shell libadwaita gtk4 dbus-daemon dbus-tools mesa-dri-drivers xorg-x11-server-Xvfb xorg-x11-xauth shadow-utils
+            dnf install -y git nodejs npm gjs gnome-shell libadwaita gtk4 dbus-daemon dbus-tools python3-dbusmock mesa-dri-drivers xorg-x11-server-Xvfb xorg-x11-xauth shadow-utils
           else
             apt-get update
-            apt-get install -y --no-install-recommends git nodejs npm gjs gnome-shell gir1.2-adw-1 gir1.2-gtk-4.0 dbus-daemon dbus-bin libgl1-mesa-dri xvfb xauth passwd
+            apt-get install -y --no-install-recommends git nodejs npm gjs gnome-shell gir1.2-adw-1 gir1.2-gtk-4.0 dbus-daemon dbus-bin python3-dbusmock libgl1-mesa-dri xvfb xauth passwd
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,7 +76,7 @@ jobs:
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
-          # GNOME Shell uses the system bus for login and time limits.
+          # GNOME Shell needs a login manager on the system bus.
           install -d -m 755 /run/dbus
           dbus-uuidgen --ensure
           dbus-daemon --system --fork
@@ -89,9 +89,10 @@ jobs:
           chown -R tester:tester target
           runuser -u tester -- dbus-send --system --print-reply --dest=org.freedesktop.DBus \
             /org/freedesktop/DBus org.freedesktop.DBus.GetId
-          runuser -u tester -- env XDG_RUNTIME_DIR="$PWD/target/gnome-runtime" LIBGL_ALWAYS_SOFTWARE=1 \
-            DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket \
-            dbus-run-session -- gnome-shell-test-tool --headless gnome/tests/shell.gjs.mjs
+          python3 -m dbusmock --system --template logind --exec \
+            runuser -u tester -- env XDG_RUNTIME_DIR="$PWD/target/gnome-runtime" LIBGL_ALWAYS_SOFTWARE=1 \
+              DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket \
+              dbus-run-session -- gnome-shell-test-tool --headless gnome/tests/shell.gjs.mjs
 
   # Reads the pin once, so the other jobs build the same source, and checks
   # that the packages agree with it.
