@@ -1,0 +1,7 @@
+{
+  "uuid": "cheesecloth@jdpanderson.ca",
+  "name": "Cheesecloth",
+  "description": "Control and inspect a Cheesecloth network",
+  "shell-version": ["48", "49", "50"],
+  "version": 1
+}

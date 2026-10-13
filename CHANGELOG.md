@@ -7,6 +7,17 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- Write the GNOME UI in TypeScript and package the compiled JavaScript.
+
+### Added
+
+- A GNOME Shell indicator and GTK management windows in a separate Debian
+  and Arch package.
+- The extension package creates the `cheesecloth` operator group and enables
+  local API access for its members.
+
 ## [0.4.0-1] - 2026-10-11
 
 ### Changed

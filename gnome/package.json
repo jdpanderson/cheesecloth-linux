@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "test:gjs": "node --test tests/api.integration.mjs"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}
