@@ -54,7 +54,7 @@ package_gnome-shell-extension-cheesecloth() {
   pkgdesc='GNOME Shell status indicator for cheesecloth'
   arch=('any')
   depends=("cheesecloth=$pkgver-$pkgrel" 'gnome-shell' 'gjs' 'gtk4' 'libadwaita' 'systemd')
-  local extension="$pkgdir/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca"
+  local extension="$pkgdir/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca"
   install -Dm644 "$startdir/../gnome/metadata.json" "$extension/metadata.json"
   install -Dm644 "$startdir/../gnome/dist/extension.js" "$extension/extension.js"
   install -Dm644 "$startdir/../gnome/dist/api.js" "$extension/api.js"

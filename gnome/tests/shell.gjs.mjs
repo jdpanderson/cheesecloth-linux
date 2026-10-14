@@ -5,7 +5,7 @@ export const METRICS = {};
 
 export async function run() {
     await Scripting.waitLeisure();
-    const uuid = 'cheesecloth@jdpanderson.ca';
+    const uuid = 'cheesecloth-gnome@janderson.ca';
     if (!Main.panel.statusArea[uuid]) {
         await Main.extensionManager.enableExtension(uuid);
         await Scripting.sleep(500);
