@@ -56,6 +56,8 @@ jobs:
             image: fedora:43
           - shell: '50'
             image: fedora:44
+          - shell: '51'
+            image: fedora:45
     steps:
       - name: Install GNOME runtime and test tools
         run: |

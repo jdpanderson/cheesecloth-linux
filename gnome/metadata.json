@@ -2,6 +2,6 @@
   "uuid": "cheesecloth@jdpanderson.ca",
   "name": "Cheesecloth",
   "description": "Control and inspect a Cheesecloth network",
-  "shell-version": ["48", "49", "50"],
+  "shell-version": ["48", "49", "50", "51"],
   "version": 1
 }
