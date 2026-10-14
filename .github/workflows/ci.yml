@@ -85,8 +85,8 @@ jobs:
           test -S /run/dbus/system_bus_socket
           mkdir -p target/gnome-runtime
           chmod 700 target/gnome-runtime
-          install -Dm644 gnome/metadata.json /usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/metadata.json
-          install -Dm644 gnome/dist/*.js -t /usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca
+          install -Dm644 gnome/metadata.json /usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/metadata.json
+          install -Dm644 gnome/dist/*.js -t /usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca
           useradd --create-home tester
           chown -R tester:tester target
           runuser -u tester -- dbus-send --system --print-reply --dest=org.freedesktop.DBus \
@@ -256,8 +256,8 @@ jobs:
           test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
           dpkg-deb --info dist/gnome-shell-extension-cheesecloth_*.deb
           dpkg-deb --extract dist/gnome-shell-extension-cheesecloth_*.deb "$RUNNER_TEMP/extension"
-          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/extension.js"
-          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/extension.js"
+          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/protocol.js"
           test -f "$RUNNER_TEMP/extension/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           apt-get install -y ./dist/cheesecloth_*.deb
           cheesecloth --version
@@ -299,8 +299,8 @@ jobs:
           test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service"
           test -f "$RUNNER_TEMP/package/etc/default/cheesecloth"
           tar -xf dist/gnome-shell-extension-cheesecloth-*.pkg.tar.zst -C "$RUNNER_TEMP/package"
-          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/extension.js"
-          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth@jdpanderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/extension.js"
+          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/protocol.js"
           test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           pacman -U --noconfirm dist/cheesecloth-[0-9]*.pkg.tar.zst
           cheesecloth --version

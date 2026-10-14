@@ -55,7 +55,7 @@ sudo systemctl restart cheesecloth
 ```
 
 Enable the extension in GNOME Extensions, or run
-`gnome-extensions enable cheesecloth@jdpanderson.ca`. Its panel icon opens a
+`gnome-extensions enable cheesecloth-gnome@janderson.ca`. Its panel icon opens a
 status menu; the menu opens separate windows for network actions. It uses the
 daemon's local socket and reads it only while the menu or a window is open.
 The daemon remains a system service when a window closes. Use `systemctl`

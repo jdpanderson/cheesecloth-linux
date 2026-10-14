@@ -13,6 +13,11 @@ names the cheesecloth version it packages plus a package revision, such as
 
 - Support GNOME Shell 51.
 
+### Changed
+
+- Rename the GNOME extension to `cheesecloth-gnome@janderson.ca`. After
+  upgrading, enable it again under the new name.
+
 ## [0.5.0-beta.0-1] - 2026-10-13
 
 The first test release of the GNOME desktop packages, built with cheesecloth

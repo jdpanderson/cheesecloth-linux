@@ -1,6 +1,7 @@
 cheesecloth (0.5.0~beta.0-2) unstable; urgency=medium
 
   * Support GNOME Shell 51.
+  * Rename the GNOME extension to cheesecloth-gnome@janderson.ca.
 
  -- Jonathan Anderson <janderson@janderson.ca>  Wed, 14 Oct 2026 00:00:00 +0000
 
