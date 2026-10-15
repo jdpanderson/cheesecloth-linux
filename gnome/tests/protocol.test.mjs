@@ -5,7 +5,7 @@ import {ApiError, decodeEnvelope, validateHello, validateResult} from '../dist/p
 const status = {
     phase: 'member', name: 'node', node_id: 'a'.repeat(64), cluster_id: 'b'.repeat(64),
     members: 2, warnings: [], public: false, relay: true, ipv4: '100.80.11.5',
-    ipv6: null, keepalive: 25, changes_paused: false, version: 3,
+    ipv6: null, permissions: {admin: true, vote: true, relay: true}, keepalive: 25, changes_paused: false, version: 3,
     acceptors: ['a'.repeat(64)], config: 1, security: 'relaxed', quorum: 1,
     reachable_voters: 1, strict_security: false, buffer_nodes: 0,
     wg_backend: 'kernel', wg_interface: 'wg0', wg_port: 51820,
@@ -14,7 +14,7 @@ const status = {
 
 const peer = {
     node_id: 'a'.repeat(64), name: 'node', ipv4: '100.80.11.5',
-    acceptor: true, relay: false, this_node: false, connected: false,
+    permissions: {admin: false, vote: true, relay: true}, acceptor: true, relay: false, this_node: false, connected: false,
     present: true, path: 'punch', path_state: 'no_path',
     path_detail: 'no path; retry in 20s', retry_in_secs: 20,
     wg_endpoint: null, handshake_age_secs: null,
@@ -39,6 +39,20 @@ test('valid replies ignore new fields and keep nullable values', () => {
     assert.equal(result.port_mapping[0].mapped, null);
     assert.equal(validateResult('join', {joined: false, node_id: 'a'.repeat(64)}).joined, false);
     assert.equal(validateResult('leave', {outcome: 'left', problems: []}).outcome, 'left');
+});
+
+test('permissions are read from status, peers and join proposals', () => {
+    const none = {admin: false, vote: false, relay: false};
+    assert.deepEqual(validateResult('status', status).permissions, {admin: true, vote: true, relay: true});
+    assert.equal(validateResult('status', {...status, phase: 'none', permissions: null}).permissions, null);
+    assert.deepEqual(validateResult('peers', [peer])[0].permissions, {admin: false, vote: true, relay: true});
+    const join = {id: 'p', kind: 'join', node: 'c'.repeat(64), name: 'friend', permissions: none, setting: null,
+        proposer: 'a'.repeat(64), approvals: [], needed: 1, expires_in_secs: 60};
+    assert.deepEqual(validateResult('pending', [join])[0].permissions, none);
+    assert.equal(validateResult('pending', [{...join, kind: 'remove', permissions: null}])[0].permissions, null);
+    for (const permissions of [null, {admin: true, vote: true}, {...none, relay: 'yes'}])
+        assert.throws(() => validateResult('peers', [{...peer, permissions}]), error =>
+            error instanceof ApiError && error.kind === 'protocol');
 });
 
 test('daemon errors preserve codes and messages', () => {

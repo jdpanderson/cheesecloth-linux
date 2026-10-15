@@ -1,3 +1,10 @@
+cheesecloth (0.5.0~beta.1-1) unstable; urgency=medium
+
+  * New upstream beta release. See CHANGELOG.md.
+  * Show and set member permissions in the GNOME app.
+
+ -- Jonathan Anderson <janderson@janderson.ca>  Thu, 15 Oct 2026 00:00:00 +0000
+
 cheesecloth (0.5.0~beta.0-6) unstable; urgency=medium
 
   * Add icons to the Status and Peers GNOME menu items, and more space

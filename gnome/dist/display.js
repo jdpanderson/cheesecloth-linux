@@ -25,12 +25,14 @@ export function menuState(status, proposals = []) {
             return { title: 'Leaving', detail: status.warnings[0] || '', level: 'attention', actions: ['retry', 'logs'] };
         case 'member': {
             const warnings = status.warnings.length;
+            // Only an admin may approve or reject, so other members get no approvals page.
+            const approvals = status.permissions?.admin ? proposals.length : 0;
             return {
                 title: warnings ? 'Connected, with warnings' : 'Connected',
                 detail: `${status.name}${SEPARATOR}${warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : `${status.members} member${status.members === 1 ? '' : 's'}`}`,
                 level: warnings ? 'attention' : 'good',
-                actions: ['status', 'peers', ...(proposals.length ? ['approvals'] : [])],
-                approvals: proposals.length,
+                actions: ['status', 'peers', ...(approvals ? ['approvals'] : [])],
+                approvals,
             };
         }
         default:
@@ -43,6 +45,15 @@ export function errorState(error) {
     if (error.kind === 'version')
         return { title: 'Needs reinstall', detail: error.message, level: 'broken', actions: [] };
     return { title: 'Not responding', detail: error.message, level: 'broken', actions: ['logs'] };
+}
+// A member's permissions for people: "All", a list such as "Voter, Relay", or "Member" with none.
+export function permissionNames(permissions) {
+    const names = [
+        ...(permissions.admin ? ['Admin'] : []),
+        ...(permissions.vote ? ['Voter'] : []),
+        ...(permissions.relay ? ['Relay'] : []),
+    ];
+    return names.length === 3 ? 'All' : names.length ? names.join(', ') : 'Member';
 }
 export function shortId(id) {
     return id && id.length > 16 ? `${id.slice(0, 12)}…${id.slice(-4)}` : id || '—';

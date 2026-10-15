@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import type {Cancellable, SocketConnection} from 'gi://Gio';
 import {ApiError, decodeEnvelope, validateHello, validateResult, type Results} from './protocol.js';
+import type {Permissions} from './types.js';
 
 export const SOCKET = '/var/lib/cheesecloth/control.sock';
 
@@ -12,7 +13,7 @@ interface Args {
     status: Record<string, never>;
     pending: Record<string, never>;
     peers: Record<string, never>;
-    invite: Record<string, never>;
+    invite: {permissions: Permissions};
     init: {strict_security: boolean; ipv4_range?: string};
     join: {token: string};
     leave: {force: boolean};

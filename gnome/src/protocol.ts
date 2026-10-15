@@ -1,4 +1,4 @@
-import type {Change, Created, Invite, Joined, Left, Peer, PortMapping, Proposal, Status} from './types.js';
+import type {Change, Created, Invite, Joined, Left, Peer, Permissions, PortMapping, Proposal, Status} from './types.js';
 
 export interface Results {
     status: Status;
@@ -92,6 +92,19 @@ export function validateHello(value: unknown): {api: number; daemon: string} {
     return {api: integer(hello.api, 'hello.api'), daemon: string(hello.daemon, 'hello.daemon')};
 }
 
+function permissions(value: unknown, path: string): Permissions {
+    const item = object(value, path);
+    return {
+        admin: boolean(item.admin, `${path}.admin`),
+        vote: boolean(item.vote, `${path}.vote`),
+        relay: boolean(item.relay, `${path}.relay`),
+    };
+}
+
+function nullablePermissions(value: unknown, path: string): Permissions | null {
+    return value === null ? null : permissions(value, path);
+}
+
 function portMapping(value: unknown, path: string): PortMapping {
     const map = object(value, path);
     const mapped = map.mapped === null ? null : object(map.mapped, `${path}.mapped`);
@@ -118,6 +131,7 @@ function status(value: unknown): Status {
         relay: boolean(item.relay, 'status.relay'),
         ipv4: nullableString(item.ipv4, 'status.ipv4'),
         ipv6: nullableString(item.ipv6, 'status.ipv6'),
+        permissions: nullablePermissions(item.permissions, 'status.permissions'),
         keepalive: integer(item.keepalive, 'status.keepalive'),
         changes_paused: boolean(item.changes_paused, 'status.changes_paused'),
         version: nullableInteger(item.version, 'status.version'),
@@ -143,6 +157,7 @@ function peer(value: unknown, path: string): Peer {
         node_id: string(item.node_id, `${path}.node_id`),
         name: string(item.name, `${path}.name`),
         ipv4: string(item.ipv4, `${path}.ipv4`),
+        permissions: permissions(item.permissions, `${path}.permissions`),
         acceptor: boolean(item.acceptor, `${path}.acceptor`),
         relay: boolean(item.relay, `${path}.relay`),
         this_node: boolean(item.this_node, `${path}.this_node`),
@@ -165,6 +180,7 @@ function proposal(value: unknown, path: string): Proposal {
         kind: choice(item.kind, `${path}.kind`, ['join', 'remove', 'setting']),
         node: nullableString(item.node, `${path}.node`),
         name: nullableString(item.name, `${path}.name`),
+        permissions: nullablePermissions(item.permissions, `${path}.permissions`),
         setting: setting ? {
             key: string(setting.key, `${path}.setting.key`),
             value: string(setting.value, `${path}.setting.value`),

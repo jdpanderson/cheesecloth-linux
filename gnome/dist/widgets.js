@@ -2,7 +2,7 @@ import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 import Pango from 'gi://Pango';
-import { pathLevel } from './display.js';
+import { pathLevel, permissionNames } from './display.js';
 const LEVEL_CLASSES = {
     good: 'success', attention: 'warning', broken: 'error', off: 'dim-label', info: 'accent',
 };
@@ -26,8 +26,10 @@ const PeerItem = GObject.registerClass({
         this.notify('peer');
     }
 });
+// What the member does now. Its permissions say what it may do.
 function role(peer) {
-    return peer.acceptor ? 'Acceptor' : peer.relay ? 'Relay' : 'Member';
+    const roles = [...(peer.acceptor ? ['Acceptor'] : []), ...(peer.relay ? ['Relay'] : [])];
+    return roles.length ? roles.join(', ') : 'Member';
 }
 function control(peer) {
     return peer.connected ? 'Yes' : peer.present ? 'Relay' : 'No';
@@ -41,6 +43,7 @@ const COLUMNS = [
     { title: 'Present', text: peer => peer.present ? 'Yes' : 'No', level: peer => peer.present ? 'good' : 'off' },
     { title: 'IPv4', text: peer => peer.ipv4 || '—', key: ipv4Key },
     { title: 'Role', text: role },
+    { title: 'Permissions', text: peer => permissionNames(peer.permissions) },
     { title: 'Control', text: control, level: peer => peer.connected ? 'good' : 'off' },
     { title: 'Path', text: peer => peer.path },
     { title: 'State', text: peer => peer.path_detail, level: peer => pathLevel(peer.path_state, peer.this_node), expand: true },
@@ -113,14 +116,15 @@ function actionsColumn(actions) {
         };
         add('Copy IP', peer => actions.copy(peer.ipv4));
         add('Copy Name', peer => actions.copy(peer.name));
-        const remove = add('Remove…', peer => actions.remove(peer, more));
+        const removePeer = actions.remove;
+        const remove = removePeer ? add('Remove…', peer => removePeer(peer, more)) : null;
         cell.set_child(more);
         rows.set(cell, { more, remove });
     });
     onPeer(factory, (cell, peer) => {
         const row = rows.get(cell);
         row?.more.set_tooltip_text(`Actions for ${peer.name}`);
-        row?.remove.set_visible(!peer.this_node);
+        row?.remove?.set_visible(!peer.this_node);
     });
     return new Gtk.ColumnViewColumn({ title: '', factory });
 }

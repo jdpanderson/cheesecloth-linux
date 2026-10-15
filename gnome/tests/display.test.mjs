@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {changeMessage, errorState, mapping, menuState, pathLevel, shortId} from '../dist/display.js';
+import {changeMessage, errorState, mapping, menuState, pathLevel, permissionNames, shortId} from '../dist/display.js';
 
 test('peer path colors follow stable state codes', () => {
     assert.equal(pathLevel('up', false), 'good');
@@ -15,10 +15,23 @@ test('menu actions follow the daemon phase and proposals', () => {
     assert.deepEqual(menuState({phase: 'none', name: 'node'}).actions, ['create', 'join']);
     assert.deepEqual(menuState({phase: 'pending', name: 'node'}).actions, ['status', 'cancel']);
     assert.deepEqual(menuState({phase: 'stopping', warnings: ['step failed']}).actions, ['retry', 'logs']);
-    const member = {phase: 'member', name: 'node', warnings: [], members: 3};
+    const member = {phase: 'member', name: 'node', warnings: [], members: 3,
+        permissions: {admin: true, vote: false, relay: false}};
     assert.deepEqual(menuState(member).actions, ['status', 'peers']);
     assert.deepEqual(menuState(member, [{id: 'a'}]).actions, ['status', 'peers', 'approvals']);
+    // Only an admin may approve or reject, so other members get no approvals page.
+    const voter = {...member, permissions: {admin: false, vote: true, relay: true}};
+    assert.deepEqual(menuState(voter, [{id: 'a'}]).actions, ['status', 'peers']);
+    assert.equal(menuState(voter, [{id: 'a'}]).approvals, 0);
     assert.equal(menuState({...member, warnings: ['warning']}).level, 'attention');
+});
+
+test('permissions are named for people', () => {
+    assert.equal(permissionNames({admin: true, vote: true, relay: true}), 'All');
+    assert.equal(permissionNames({admin: false, vote: true, relay: true}), 'Voter, Relay');
+    assert.equal(permissionNames({admin: true, vote: false, relay: true}), 'Admin, Relay');
+    assert.equal(permissionNames({admin: true, vote: false, relay: false}), 'Admin');
+    assert.equal(permissionNames({admin: false, vote: false, relay: false}), 'Member');
 });
 
 test('refusal and API mismatch are distinct from a stopped daemon', () => {
