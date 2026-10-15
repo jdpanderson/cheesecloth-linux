@@ -1,3 +1,10 @@
+cheesecloth (0.5.0~beta.0-6) unstable; urgency=medium
+
+  * Add icons to the Status and Peers GNOME menu items, and more space
+    around the dot in the menu headers.
+
+ -- Jonathan Anderson <janderson@janderson.ca>  Thu, 15 Oct 2026 00:00:00 +0000
+
 cheesecloth (0.5.0~beta.0-5) unstable; urgency=medium
 
   * Show the GNOME menu header on two lines.

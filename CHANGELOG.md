@@ -7,6 +7,8 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.0-6] - 2026-10-15
+
 ### Changed
 
 - The Status and Peers items in the GNOME panel menu show an icon.
