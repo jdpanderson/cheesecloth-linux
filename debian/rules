@@ -37,6 +37,6 @@ override_dh_auto_install:
 	install -Dm755 debian/target/release/cheesecloth -t debian/cheesecloth/usr/bin
 	install -Dm644 packaging/cheesecloth.service -t debian/cheesecloth/usr/lib/systemd/system
 	install -Dm644 packaging/cheesecloth.default debian/cheesecloth/etc/default/cheesecloth
-	install -Dm644 gnome/metadata.json gnome/dist/extension.js gnome/dist/api.js gnome/dist/display.js gnome/dist/protocol.js gnome/dist/app.js -t debian/gnome-shell-extension-cheesecloth/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca
+	install -Dm644 gnome/metadata.json gnome/dist/extension.js gnome/dist/api.js gnome/dist/display.js gnome/dist/protocol.js gnome/dist/app.js gnome/dist/widgets.js -t debian/gnome-shell-extension-cheesecloth/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca
 	install -Dm644 gnome/cheesecloth.conf debian/gnome-shell-extension-cheesecloth/usr/lib/sysusers.d/cheesecloth.conf
 	install -Dm644 gnome/10-gnome.conf debian/gnome-shell-extension-cheesecloth/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf
