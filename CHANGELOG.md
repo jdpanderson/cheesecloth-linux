@@ -7,6 +7,15 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Fixed
+
+- The section buttons in the GNOME Status window now work when you click
+  their text, and show the normal pointer.
+- Create Network and Join Network close and open Status when they succeed.
+- The Status window refreshes after you leave the network.
+- Long node and network IDs in Status are shortened in the middle to fit.
+  The tooltip shows the full ID.
+
 ## [0.5.0-beta.0-2] - 2026-10-14
 
 ### Added
