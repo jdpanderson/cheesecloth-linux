@@ -1,3 +1,11 @@
+cheesecloth (0.5.0~beta.0-3) unstable; urgency=medium
+
+  * Show GNOME peers in a sortable table.
+  * Use the Cheesecloth icon in the GNOME panel.
+  * Fix the GNOME Status, Create Network and Join Network windows.
+
+ -- Jonathan Anderson <janderson@janderson.ca>  Wed, 14 Oct 2026 00:00:00 +0000
+
 cheesecloth (0.5.0~beta.0-2) unstable; urgency=medium
 
   * Support GNOME Shell 51.
