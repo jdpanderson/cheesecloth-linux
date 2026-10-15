@@ -11,6 +11,7 @@ names the cheesecloth version it packages plus a package revision, such as
 
 - The GNOME Peers window shows peers in a table. You can sort and resize its
   columns.
+- The GNOME panel uses the Cheesecloth icon from the macOS and Windows apps.
 
 ### Fixed
 

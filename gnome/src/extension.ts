@@ -27,8 +27,9 @@ export default class CheeseclothExtension extends Extension {
 
     enable(): void {
         this._indicator = new PanelMenu.Button(0.0, 'Cheesecloth');
+        // The name ends in -symbolic, so the Shell colors the icon to match the panel.
         this._indicator.add_child(new St.Icon({
-            icon_name: 'network-vpn-symbolic',
+            gicon: Gio.icon_new_for_string(`${this.path}/cheesecloth-symbolic.svg`),
             style_class: 'system-status-icon',
         }));
         this._indicator.menu.connect('open-state-changed', (_menu, open) => {
