@@ -53,7 +53,7 @@ export default class CheeseclothExtension extends Extension {
         this._cancellable = cancellable;
         try {
             const status = await call('status', {}, cancellable);
-            const proposals = status.phase === 'member'
+            const proposals = status.phase === 'member' && status.permissions?.admin
                 ? await call('pending', {}, cancellable) : [];
             if (!cancellable.is_cancelled())
                 this._render(menuState(status, proposals));

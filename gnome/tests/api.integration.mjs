@@ -9,7 +9,8 @@ import test from 'node:test';
 const status = {
     phase: 'member', name: 'test-node', node_id: 'a'.repeat(64),
     cluster_id: 'b'.repeat(64), members: 1, warnings: [], public: false,
-    relay: false, ipv4: '100.80.11.5', ipv6: null, keepalive: 25,
+    relay: false, ipv4: '100.80.11.5', ipv6: null,
+    permissions: {admin: true, vote: true, relay: true}, keepalive: 25,
     changes_paused: false, version: 1, acceptors: ['a'.repeat(64)],
     config: 1, security: 'relaxed', quorum: 1, reachable_voters: 1,
     strict_security: false, buffer_nodes: 0, wg_backend: 'kernel',

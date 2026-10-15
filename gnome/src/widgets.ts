@@ -6,7 +6,7 @@ import type {ListStore} from 'gi://Gio';
 import type {Button, ColumnView, ColumnViewCell, ColumnViewColumn, Label, MenuButton, ScrolledWindow,
     SignalListItemFactory, Widget} from 'gi://Gtk?version=4.0';
 
-import {pathLevel, type Level} from './display.js';
+import {pathLevel, permissionNames, type Level} from './display.js';
 import type {Peer} from './types.js';
 
 const LEVEL_CLASSES: Record<Level, string> = {
@@ -47,8 +47,10 @@ interface Column {
     expand?: boolean;
 }
 
+// What the member does now. Its permissions say what it may do.
 function role(peer: Peer): string {
-    return peer.acceptor ? 'Acceptor' : peer.relay ? 'Relay' : 'Member';
+    const roles = [...(peer.acceptor ? ['Acceptor'] : []), ...(peer.relay ? ['Relay'] : [])];
+    return roles.length ? roles.join(', ') : 'Member';
 }
 
 function control(peer: Peer): string {
@@ -65,6 +67,7 @@ const COLUMNS: Column[] = [
     {title: 'Present', text: peer => peer.present ? 'Yes' : 'No', level: peer => peer.present ? 'good' : 'off'},
     {title: 'IPv4', text: peer => peer.ipv4 || '—', key: ipv4Key},
     {title: 'Role', text: role},
+    {title: 'Permissions', text: peer => permissionNames(peer.permissions)},
     {title: 'Control', text: control, level: peer => peer.connected ? 'good' : 'off'},
     {title: 'Path', text: peer => peer.path},
     {title: 'State', text: peer => peer.path_detail, level: peer => pathLevel(peer.path_state, peer.this_node), expand: true},
@@ -119,13 +122,14 @@ function textColumn(column: Column): ColumnViewColumn {
 
 export interface PeerActions {
     copy(text: string): void;
-    // `button` is the row's menu button, which stays disabled while the removal runs.
-    remove(peer: Peer, button: MenuButton): void;
+    // `button` is the row's menu button, which stays disabled while the removal runs. Without it, the
+    // rows have no Remove item, as for a member without the admin permission.
+    remove?: (peer: Peer, button: MenuButton) => void;
 }
 
 function actionsColumn(actions: PeerActions): ColumnViewColumn {
     const factory = new Gtk.SignalListItemFactory();
-    const rows = new WeakMap<ColumnViewCell, {more: MenuButton; remove: Button}>();
+    const rows = new WeakMap<ColumnViewCell, {more: MenuButton; remove: Button | null}>();
     factory.connect('setup', (_factory, cell) => {
         const menu = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 8});
         const popover = new Gtk.Popover();
@@ -147,14 +151,15 @@ function actionsColumn(actions: PeerActions): ColumnViewColumn {
         };
         add('Copy IP', peer => actions.copy(peer.ipv4));
         add('Copy Name', peer => actions.copy(peer.name));
-        const remove = add('Remove…', peer => actions.remove(peer, more));
+        const removePeer = actions.remove;
+        const remove = removePeer ? add('Remove…', peer => removePeer(peer, more)) : null;
         cell.set_child(more);
         rows.set(cell, {more, remove});
     });
     onPeer(factory, (cell, peer) => {
         const row = rows.get(cell);
         row?.more.set_tooltip_text(`Actions for ${peer.name}`);
-        row?.remove.set_visible(!peer.this_node);
+        row?.remove?.set_visible(!peer.this_node);
     });
     return new Gtk.ColumnViewColumn({title: '', factory});
 }

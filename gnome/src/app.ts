@@ -4,11 +4,11 @@ import Gtk from 'gi://Gtk?version=4.0';
 import Adw from 'gi://Adw?version=1';
 import Pango from 'gi://Pango';
 import type {Subprocess} from 'gi://Gio';
-import type {Box, Button, Label, ScrolledWindow, Stack, Widget, Window as GtkWindow} from 'gi://Gtk?version=4.0';
+import type {Box, Button, CheckButton, Label, ScrolledWindow, Stack, Widget, Window as GtkWindow} from 'gi://Gtk?version=4.0';
 import type {ApplicationWindow} from 'gi://Adw?version=1';
 
 import {call} from './api.js';
-import {changeMessage, mapping, shortId, type Level} from './display.js';
+import {changeMessage, mapping, permissionNames, shortId, type Level} from './display.js';
 import {PeerTable, setLevel} from './widgets.js';
 import type {Invite, Peer, Proposal, Status} from './types.js';
 
@@ -24,6 +24,7 @@ const HELP = {
     quorum: 'The number of acceptor votes needed to agree on a change.',
     reachable: 'The acceptors this computer can reach now. When fewer than the quorum can be reached, changes pause.',
     strict: 'When on, a protected network does not fall back to relaxed when acceptors go away. It pauses changes instead.',
+    permissions: 'What the member may do, set by its invite. Admin: invite, remove, approve and change settings. Voter: be an acceptor, and take joins to the network. Relay: relay messages for other members. All: all three. Member: none of them. Every member can use the network and leave. Permissions never change.',
     buffer: 'How many acceptors may be unreachable while changes still go through. A larger buffer needs more acceptors before protection starts.',
 };
 
@@ -334,6 +335,8 @@ class Window {
         addSection('overview', 'Overview', overviewStatus.level, overviewScroll);
         if (status.phase === 'member') {
             const [networkScroll, network] = page();
+            addRow('network', network, 'Permissions', status.permissions && permissionNames(status.permissions),
+                HELP.permissions);
             addRow('network', network, 'Reachability', status.public ? 'Public' : 'Behind NAT', '', status.public ? 'good' : 'off');
             addRow('network', network, 'Relay', status.relay ? 'Yes' : 'No');
             addRow('network', network, 'IPv4', status.ipv4);
@@ -420,6 +423,7 @@ class Window {
         field('overview', 'Members', status.members);
         if (status.phase !== 'member')
             return;
+        field('network', 'Permissions', status.permissions && permissionNames(status.permissions));
         field('network', 'Reachability', status.public ? 'Public' : 'Behind NAT', status.public ? 'good' : 'off');
         field('network', 'Relay', status.relay ? 'Yes' : 'No');
         field('network', 'IPv4', status.ipv4);
@@ -456,13 +460,17 @@ class Window {
             this.peerCount = label('');
             this.peerCount.add_css_class('title-4');
             top.append(this.peerCount);
-            top.append(button('Invite…', () => new Window('invite')));
+            // A member's permissions never change, so the first reply decides what this window offers.
+            // Only an admin may invite or remove.
+            const admin = peers.some(peer => peer.this_node && peer.permissions.admin);
+            if (admin)
+                top.append(button('Invite…', () => new Window('invite')));
             content.append(top);
             this.peerEmpty = label('No other members yet.');
             content.append(this.peerEmpty);
             this.peerTable = new PeerTable({
                 copy: text => this.copy(text),
-                remove: (peer, more) => this.removePeer(peer, more),
+                remove: admin ? (peer, more) => this.removePeer(peer, more) : undefined,
             });
             content.append(this.peerTable.widget);
             content.append(label('Up: recent handshake • Other states need attention • No path: broken'));
@@ -490,6 +498,20 @@ class Window {
             return;
         const [scroll, content] = page();
         content.append(label('An invite lets one new node join, works once, and expires after 30 minutes.'));
+        const options = new Adw.PreferencesGroup({title: 'Permissions',
+            description: 'Every member can use the network and leave. Permissions never change: ' +
+                'to change them, the member must leave and join again.'});
+        const permission = (title: string, subtitle: string): CheckButton => {
+            const check = new Gtk.CheckButton({active: true, valign: Gtk.Align.CENTER});
+            const row = new Adw.ActionRow({title, subtitle, activatable_widget: check});
+            row.add_prefix(check);
+            options.add(row);
+            return check;
+        };
+        const admin = permission('Admin', 'Invite, remove, approve and change settings.');
+        const vote = permission('Voter', 'Be an acceptor, and take joins to the network.');
+        const relay = permission('Relay', 'Relay messages for other members.');
+        content.append(options);
         const token = label('');
         token.set_wrap(true);
         content.append(token);
@@ -497,7 +519,9 @@ class Window {
         content.append(remaining);
         const create = button('Create Invite', async () => {
             await this.run(create, async () => {
-                this.invite = await call('invite', {}, this.cancellable);
+                this.invite = await call('invite', {permissions: {
+                    admin: admin.get_active(), vote: vote.get_active(), relay: relay.get_active(),
+                }}, this.cancellable);
                 if (this.cancellable.is_cancelled())
                     return '';
                 token.set_text(this.invite.token);
@@ -561,8 +585,11 @@ class Window {
             const count = row(card, 'Approvals', `${proposal.approvals.length} of ${proposal.needed}`).value;
             const time = row(card, 'Time left', `${proposal.expires_in_secs}s`).value;
             this.approvalFields.set(proposal.id, {count, time});
-            if (proposal.kind === 'join')
+            if (proposal.kind === 'join') {
+                if (proposal.permissions)
+                    row(card, 'Permissions', permissionNames(proposal.permissions), HELP.permissions);
                 row(card, 'Check this ID', `${proposal.node}\nCheck it against the joining node.`);
+            }
             const actions = box(8, Gtk.Orientation.HORIZONTAL);
             for (const [text, cmd] of [['Reject', 'reject'], ['Approve', 'approve']] as const)
                 actions.append(button(text, async () => {

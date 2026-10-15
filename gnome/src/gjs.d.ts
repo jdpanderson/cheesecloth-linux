@@ -189,6 +189,10 @@ declare module 'gi://Gtk?version=4.0' {
     export class Switch extends Widget {
         get_active(): boolean;
     }
+    export class CheckButton extends Widget {
+        constructor(properties?: {active?: boolean; valign?: number});
+        get_active(): boolean;
+    }
     export class Clipboard {
         set_text(text: string): void;
     }
@@ -252,6 +256,7 @@ declare module 'gi://Gtk?version=4.0' {
         static add_provider_for_display(display: Display, provider: CssProvider, priority: number): void;
     }
     export const Orientation: {VERTICAL: number; HORIZONTAL: number};
+    export const Align: {CENTER: number};
     export const SorterChange: {DIFFERENT: number};
     export const WrapMode: {CHAR: number};
     export const ButtonsType: {CLOSE: number; NONE: number};
@@ -261,10 +266,10 @@ declare module 'gi://Gtk?version=4.0' {
         Label: typeof Label; Box: typeof Box; Button: typeof Button; MenuButton: typeof MenuButton;
         Popover: typeof Popover; ScrolledWindow: typeof ScrolledWindow; HeaderBar: typeof HeaderBar;
         Stack: typeof Stack; Separator: typeof Separator; Grid: typeof Grid;
-        TextView: typeof TextView; Entry: typeof Entry; Switch: typeof Switch;
+        TextView: typeof TextView; Entry: typeof Entry; Switch: typeof Switch; CheckButton: typeof CheckButton;
         ApplicationWindow: typeof ApplicationWindow; Application: typeof Application;
         MessageDialog: typeof MessageDialog; CssProvider: typeof CssProvider; StyleContext: typeof StyleContext;
-        Orientation: typeof Orientation; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
+        Orientation: typeof Orientation; Align: typeof Align; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
         ResponseType: typeof ResponseType; STYLE_PROVIDER_PRIORITY_APPLICATION: number;
         CustomSorter: typeof CustomSorter; SortListModel: typeof SortListModel; NoSelection: typeof NoSelection;
         SignalListItemFactory: typeof SignalListItemFactory; ColumnViewColumn: typeof ColumnViewColumn;
@@ -299,7 +304,12 @@ declare module 'gi://Adw?version=1' {
         present(parent: Widget): void;
     }
     export class PreferencesGroup extends Widget {
+        constructor(properties?: {title?: string; description?: string});
         add(child: Widget): void;
+    }
+    export class ActionRow extends Widget {
+        constructor(properties?: {title: string; subtitle: string; activatable_widget?: Widget});
+        add_prefix(widget: Widget): void;
     }
     export class EntryRow extends Widget {
         constructor(properties?: {title: string});
@@ -315,6 +325,7 @@ declare module 'gi://Adw?version=1' {
         HeaderBar: typeof HeaderBar; ToolbarView: typeof ToolbarView;
         AlertDialog: typeof AlertDialog; ResponseAppearance: typeof ResponseAppearance;
         PreferencesGroup: typeof PreferencesGroup; EntryRow: typeof EntryRow; SwitchRow: typeof SwitchRow;
+        ActionRow: typeof ActionRow;
     };
     export default Adw;
 }

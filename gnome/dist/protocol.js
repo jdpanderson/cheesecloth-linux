@@ -64,6 +64,17 @@ export function validateHello(value) {
     const hello = object(value, 'hello');
     return { api: integer(hello.api, 'hello.api'), daemon: string(hello.daemon, 'hello.daemon') };
 }
+function permissions(value, path) {
+    const item = object(value, path);
+    return {
+        admin: boolean(item.admin, `${path}.admin`),
+        vote: boolean(item.vote, `${path}.vote`),
+        relay: boolean(item.relay, `${path}.relay`),
+    };
+}
+function nullablePermissions(value, path) {
+    return value === null ? null : permissions(value, path);
+}
 function portMapping(value, path) {
     const map = object(value, path);
     const mapped = map.mapped === null ? null : object(map.mapped, `${path}.mapped`);
@@ -89,6 +100,7 @@ function status(value) {
         relay: boolean(item.relay, 'status.relay'),
         ipv4: nullableString(item.ipv4, 'status.ipv4'),
         ipv6: nullableString(item.ipv6, 'status.ipv6'),
+        permissions: nullablePermissions(item.permissions, 'status.permissions'),
         keepalive: integer(item.keepalive, 'status.keepalive'),
         changes_paused: boolean(item.changes_paused, 'status.changes_paused'),
         version: nullableInteger(item.version, 'status.version'),
@@ -113,6 +125,7 @@ function peer(value, path) {
         node_id: string(item.node_id, `${path}.node_id`),
         name: string(item.name, `${path}.name`),
         ipv4: string(item.ipv4, `${path}.ipv4`),
+        permissions: permissions(item.permissions, `${path}.permissions`),
         acceptor: boolean(item.acceptor, `${path}.acceptor`),
         relay: boolean(item.relay, `${path}.relay`),
         this_node: boolean(item.this_node, `${path}.this_node`),
@@ -134,6 +147,7 @@ function proposal(value, path) {
         kind: choice(item.kind, `${path}.kind`, ['join', 'remove', 'setting']),
         node: nullableString(item.node, `${path}.node`),
         name: nullableString(item.name, `${path}.name`),
+        permissions: nullablePermissions(item.permissions, `${path}.permissions`),
         setting: setting ? {
             key: string(setting.key, `${path}.setting.key`),
             value: string(setting.value, `${path}.setting.value`),

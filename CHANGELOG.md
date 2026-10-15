@@ -7,6 +7,23 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Added
+
+- Member permissions in the GNOME app. The Invite window has a checkbox for
+  each permission, Admin, Voter and Relay, all on by default. The Status
+  window and join approvals show the permissions, and the Peers window has a
+  Permissions column: "All", a list such as "Voter, Relay", or "Member".
+
+### Changed
+
+- The packages build cheesecloth 0.5.0-beta.1, which adds member
+  permissions. Its local API and agreed state differ from 0.5.0-beta.0:
+  rebuild existing networks.
+- On a member without the admin permission, the GNOME app has no Invite
+  button, no Remove item for peers and no Approvals item in the panel menu.
+- The Role column in the GNOME Peers window shows both roles of a member
+  that is an acceptor and a relay.
+
 ## [0.5.0-beta.0-6] - 2026-10-15
 
 ### Changed

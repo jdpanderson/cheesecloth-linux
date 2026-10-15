@@ -1,4 +1,12 @@
 // The fields used by this UI from cheesecloth's local API.
+
+// What a member may do, set by its invite. It never changes.
+export interface Permissions {
+    admin: boolean;
+    vote: boolean;
+    relay: boolean;
+}
+
 export interface Status {
     phase: 'none' | 'pending' | 'member' | 'stopping';
     name: string;
@@ -10,6 +18,8 @@ export interface Status {
     relay: boolean;
     ipv4: string | null;
     ipv6: string | null;
+    // Null unless a member.
+    permissions: Permissions | null;
     keepalive: number;
     changes_paused: boolean;
     version: number | null;
@@ -37,6 +47,7 @@ export interface Peer {
     node_id: string;
     name: string;
     ipv4: string;
+    permissions: Permissions;
     acceptor: boolean;
     relay: boolean;
     this_node: boolean;
@@ -55,6 +66,8 @@ export interface Proposal {
     kind: 'join' | 'remove' | 'setting';
     node: string | null;
     name: string | null;
+    // For a join, the new member's permissions. Null for other kinds.
+    permissions: Permissions | null;
     setting: {key: string; value: string} | null;
     proposer: string;
     approvals: string[];

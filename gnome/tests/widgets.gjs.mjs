@@ -33,7 +33,7 @@ dialog.close();
 // The peers table shows each peer, updates rows in place and follows joins and leaves.
 function peer(name, fields = {}) {
     return {node_id: `id-${name}`, name, ipv4: '100.64.0.2', acceptor: false, relay: false, this_node: false,
-        connected: true, present: true, path: 'direct', path_state: 'up', path_detail: 'Up', retry_in_secs: null,
+        permissions: {admin: true, vote: true, relay: true}, connected: true, present: true, path: 'direct', path_state: 'up', path_detail: 'Up', retry_in_secs: null,
         wg_endpoint: '192.0.2.1:51820', handshake_age_secs: 5, ...fields};
 }
 
@@ -63,4 +63,19 @@ table.update([peer('alpha', {this_node: true}), peer('beta', {handshake_age_secs
 waitFor(() => texts(table.widget).includes('42s ago'), 'the new handshake age');
 table.update([peer('alpha', {this_node: true})]);
 waitFor(() => !texts(table.widget).includes('beta'), 'that beta left');
+// Each row shows what the member does now, and what it may do.
+table.update([peer('alpha', {this_node: true, acceptor: true}),
+    peer('router', {acceptor: true, relay: true, permissions: {admin: false, vote: true, relay: true}}),
+    peer('friend', {permissions: {admin: false, vote: false, relay: false}})]);
+waitFor(() => ['Acceptor', 'Acceptor, Relay', 'All', 'Voter, Relay', 'Member']
+    .every(text => texts(table.widget).includes(text)), 'each role and permissions');
+waitFor(() => texts(table.widget).includes('Remove…'), 'a Remove item');
+
+// Without a remove action, as for a member without the admin permission, no row has a Remove item.
+const passive = new PeerTable({copy() {}});
+window.set_content(passive.widget);
+passive.update([peer('alpha', {this_node: true}), peer('beta')]);
+waitFor(() => texts(passive.widget).includes('Copy IP'), 'the row actions');
+if (texts(passive.widget).includes('Remove…'))
+    throw new Error('The peers table shows Remove without a remove action.');
 window.close();
