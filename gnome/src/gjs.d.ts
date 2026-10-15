@@ -66,6 +66,8 @@ declare module 'gi://Gio' {
         get_n_items(): number;
         splice(position: number, removals: number, additions: GObject[]): void;
     }
+    export interface Icon {}
+    export function icon_new_for_string(name: string): Icon;
     export const ApplicationFlags: {NON_UNIQUE: number};
     export const SubprocessFlags: {NONE: number; STDOUT_PIPE: number; STDERR_PIPE: number};
     const Gio: {
@@ -73,6 +75,7 @@ declare module 'gi://Gio' {
         SocketClient: typeof SocketClient; DataInputStream: typeof DataInputStream;
         Subprocess: typeof Subprocess; ApplicationFlags: typeof ApplicationFlags;
         SubprocessFlags: typeof SubprocessFlags; ListStore: typeof ListStore;
+        icon_new_for_string: typeof icon_new_for_string;
     };
     export default Gio;
 }
@@ -317,8 +320,9 @@ declare module 'gi://Adw?version=1' {
 }
 
 declare module 'gi://St' {
+    import type {Icon as GIcon} from 'gi://Gio';
     export class Icon {
-        constructor(properties?: {icon_name?: string; style_class?: string});
+        constructor(properties?: {gicon?: GIcon; style_class?: string});
     }
     export class Label {
         set_style(style: string): void;

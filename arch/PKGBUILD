@@ -62,6 +62,7 @@ package_gnome-shell-extension-cheesecloth() {
   install -Dm644 "$startdir/../gnome/dist/protocol.js" "$extension/protocol.js"
   install -Dm644 "$startdir/../gnome/dist/app.js" "$extension/app.js"
   install -Dm644 "$startdir/../gnome/dist/widgets.js" "$extension/widgets.js"
+  install -Dm644 "$startdir/../gnome/cheesecloth-symbolic.svg" "$extension/cheesecloth-symbolic.svg"
   install -Dm644 "$startdir/../gnome/cheesecloth.conf" "$pkgdir/usr/lib/sysusers.d/cheesecloth.conf"
   install -Dm644 "$startdir/../gnome/10-gnome.conf" "$pkgdir/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
 }
