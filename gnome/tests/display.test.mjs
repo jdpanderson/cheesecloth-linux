@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {changeMessage, errorState, mapping, menuState, pathLevel, permissionNames, shortId} from '../dist/display.js';
+import {changeMessage, errorState, mapping, menuState, pathLevel, permissionBadges, permissionNames, roleBadges, shortId} from '../dist/display.js';
 
 test('peer path colors follow stable state codes', () => {
     assert.equal(pathLevel('up', false), 'good');
@@ -32,6 +32,20 @@ test('permissions are named for people', () => {
     assert.equal(permissionNames({admin: true, vote: false, relay: true}), 'Admin, Relay');
     assert.equal(permissionNames({admin: true, vote: false, relay: false}), 'Admin');
     assert.equal(permissionNames({admin: false, vote: false, relay: false}), 'Member');
+});
+
+test('roles and permissions have an icon each, and Member when there are none', () => {
+    const icons = badges => badges.map(badge => badge.icon);
+    assert.deepEqual(icons(roleBadges({acceptor: true, relay: true})),
+        ['object-select-symbolic', 'network-transmit-receive-symbolic']);
+    assert.deepEqual(roleBadges({acceptor: false, relay: false}),
+        [{icon: 'avatar-default-symbolic', tooltip: 'Member: no other role now', dim: true}]);
+    assert.deepEqual(icons(permissionBadges({admin: true, vote: true, relay: true})),
+        ['security-high-symbolic', 'object-select-symbolic', 'network-transmit-receive-symbolic']);
+    assert.equal(permissionBadges({admin: false, vote: true, relay: false})[0].tooltip,
+        'Voter: may be an acceptor, and take joins to the network');
+    assert.deepEqual(permissionBadges({admin: false, vote: false, relay: false}),
+        [{icon: 'avatar-default-symbolic', tooltip: 'Member: may use the network and leave', dim: true}]);
 });
 
 test('refusal and API mismatch are distinct from a stopped daemon', () => {

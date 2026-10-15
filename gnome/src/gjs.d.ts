@@ -189,6 +189,10 @@ declare module 'gi://Gtk?version=4.0' {
     export class Switch extends Widget {
         get_active(): boolean;
     }
+    export class Image extends Widget {
+        constructor(properties?: {icon_name?: string});
+        update_property(properties: number[], values: unknown[]): void;
+    }
     export class CheckButton extends Widget {
         constructor(properties?: {active?: boolean; valign?: number});
         get_active(): boolean;
@@ -257,6 +261,7 @@ declare module 'gi://Gtk?version=4.0' {
     }
     export const Orientation: {VERTICAL: number; HORIZONTAL: number};
     export const Align: {CENTER: number};
+    export const AccessibleProperty: {LABEL: number};
     export const SorterChange: {DIFFERENT: number};
     export const WrapMode: {CHAR: number};
     export const ButtonsType: {CLOSE: number; NONE: number};
@@ -266,10 +271,10 @@ declare module 'gi://Gtk?version=4.0' {
         Label: typeof Label; Box: typeof Box; Button: typeof Button; MenuButton: typeof MenuButton;
         Popover: typeof Popover; ScrolledWindow: typeof ScrolledWindow; HeaderBar: typeof HeaderBar;
         Stack: typeof Stack; Separator: typeof Separator; Grid: typeof Grid;
-        TextView: typeof TextView; Entry: typeof Entry; Switch: typeof Switch; CheckButton: typeof CheckButton;
+        TextView: typeof TextView; Entry: typeof Entry; Switch: typeof Switch; CheckButton: typeof CheckButton; Image: typeof Image;
         ApplicationWindow: typeof ApplicationWindow; Application: typeof Application;
         MessageDialog: typeof MessageDialog; CssProvider: typeof CssProvider; StyleContext: typeof StyleContext;
-        Orientation: typeof Orientation; Align: typeof Align; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
+        Orientation: typeof Orientation; Align: typeof Align; AccessibleProperty: typeof AccessibleProperty; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
         ResponseType: typeof ResponseType; STYLE_PROVIDER_PRIORITY_APPLICATION: number;
         CustomSorter: typeof CustomSorter; SortListModel: typeof SortListModel; NoSelection: typeof NoSelection;
         SignalListItemFactory: typeof SignalListItemFactory; ColumnViewColumn: typeof ColumnViewColumn;

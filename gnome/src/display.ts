@@ -1,4 +1,4 @@
-import type {Change, Permissions, PortMapping, Proposal, Status} from './types.js';
+import type {Change, Peer, Permissions, PortMapping, Proposal, Status} from './types.js';
 
 export type Level = 'good' | 'attention' | 'broken' | 'off' | 'info';
 
@@ -71,6 +71,35 @@ export function permissionNames(permissions: Permissions): string {
         ...(permissions.relay ? ['Relay'] : []),
     ];
     return names.length === 3 ? 'All' : names.length ? names.join(', ') : 'Member';
+}
+
+// An icon in the peers table, with the tooltip that names it. `dim` is for "Member", which has none of the others.
+export interface Badge {
+    icon: string;
+    tooltip: string;
+    dim?: boolean;
+}
+
+const VOTE_ICON = 'object-select-symbolic';
+const RELAY_ICON = 'network-transmit-receive-symbolic';
+const MEMBER_ICON = 'avatar-default-symbolic';
+
+// What the member does now. Its permissions say what it may do.
+export function roleBadges(peer: Pick<Peer, 'acceptor' | 'relay'>): Badge[] {
+    const badges = [
+        ...(peer.acceptor ? [{icon: VOTE_ICON, tooltip: 'Acceptor: votes on changes now'}] : []),
+        ...(peer.relay ? [{icon: RELAY_ICON, tooltip: 'Relay: relays messages for other members now'}] : []),
+    ];
+    return badges.length ? badges : [{icon: MEMBER_ICON, tooltip: 'Member: no other role now', dim: true}];
+}
+
+export function permissionBadges(permissions: Permissions): Badge[] {
+    const badges = [
+        ...(permissions.admin ? [{icon: 'security-high-symbolic', tooltip: 'Admin: may invite, remove, approve and change settings'}] : []),
+        ...(permissions.vote ? [{icon: VOTE_ICON, tooltip: 'Voter: may be an acceptor, and take joins to the network'}] : []),
+        ...(permissions.relay ? [{icon: RELAY_ICON, tooltip: 'Relay: may relay messages for other members'}] : []),
+    ];
+    return badges.length ? badges : [{icon: MEMBER_ICON, tooltip: 'Member: may use the network and leave', dim: true}];
 }
 
 export function shortId(id: string | null | undefined): string {

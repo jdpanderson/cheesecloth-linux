@@ -63,12 +63,20 @@ table.update([peer('alpha', {this_node: true}), peer('beta', {handshake_age_secs
 waitFor(() => texts(table.widget).includes('42s ago'), 'the new handshake age');
 table.update([peer('alpha', {this_node: true})]);
 waitFor(() => !texts(table.widget).includes('beta'), 'that beta left');
-// Each row shows what the member does now, and what it may do.
+// Each row shows what the member does now, and what it may do, as icons with tooltips.
+function tooltips(widget) {
+    const found = widget instanceof Gtk.Image ? [widget.get_tooltip_text()] : [];
+    for (let child = widget.get_first_child(); child; child = child.get_next_sibling())
+        found.push(...tooltips(child));
+    return found;
+}
 table.update([peer('alpha', {this_node: true, acceptor: true}),
     peer('router', {acceptor: true, relay: true, permissions: {admin: false, vote: true, relay: true}}),
     peer('friend', {permissions: {admin: false, vote: false, relay: false}})]);
-waitFor(() => ['Acceptor', 'Acceptor, Relay', 'All', 'Voter, Relay', 'Member']
-    .every(text => texts(table.widget).includes(text)), 'each role and permissions');
+waitFor(() => ['Acceptor: votes on changes now', 'Relay: relays messages for other members now',
+    'Member: no other role now', 'Admin: may invite, remove, approve and change settings',
+    'Voter: may be an acceptor, and take joins to the network', 'Member: may use the network and leave']
+    .every(text => tooltips(table.widget).includes(text)), 'each role and permission icon');
 waitFor(() => texts(table.widget).includes('Remove…'), 'a Remove item');
 
 // Without a remove action, as for a member without the admin permission, no row has a Remove item.
