@@ -7,6 +7,11 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Fixed
+
+- The Cheesecloth icon in the GNOME panel is now the same size as the other
+  panel icons. Before, it had empty space around it and sat too high.
+
 ## [0.5.0-beta.0-3] - 2026-10-14
 
 ### Changed

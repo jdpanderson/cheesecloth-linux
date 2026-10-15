@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="1.805 0.427 13.675 13.675">
   <!-- The menubar icon of the macOS and Windows apps, with its lines turned into filled shapes.
-       GNOME Shell colors a symbolic icon by setting the fill of every shape, so it cannot draw strokes. -->
+       GNOME Shell colors a symbolic icon by setting the fill of every shape, so it cannot draw strokes.
+       The viewBox is a square that fits the shapes with no margin and centers them,
+       so the icon is the same size as the other symbolic icons in the panel. -->
   <g fill="#000">
     <path d="M 7.2460937,2.1269531 C 4.9805261,3.1807055 2.8009753,6.3007674 1.8105469,11.050781 A 0.245,0.245 0 0 0 2,11.339844 0.245,0.245 0 0 0 2.2890625,11.150391 C 3.2586341,6.5004045 5.4186926,3.5185132 7.453125,2.5722656 A 0.245,0.245 0 0 0 7.5722656,2.2460938 0.245,0.245 0 0 0 7.2460937,2.1269531 Z"/>
     <path d="M 4.2734375,9.0996094 C 3.2211953,9.3335879 2.355329,9.9397325 1.8300781,10.990234 a 0.245,0.245 0 0 0 0.1113281,0.328125 0.245,0.245 0 0 0 0.3281251,-0.109375 C 2.7342803,10.279486 3.4431016,9.7866465 4.3808594,9.578125 5.3186172,9.3696035 6.4871842,9.4673017 7.7910156,9.7871094 A 0.245,0.245 0 0 0 8.0878906,9.6074219 0.245,0.245 0 0 0 7.9082031,9.3125 C 6.5620346,8.9823077 5.3256797,8.8656309 4.2734375,9.0996094 Z"/>
