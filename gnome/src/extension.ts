@@ -75,8 +75,7 @@ export default class CheeseclothExtension extends Extension {
             return;
         const menu = this._indicator.menu;
         menu.removeAll();
-        menu.addMenuItem(new PopupMenu.PopupMenuItem('Cheesecloth', {reactive: false}));
-        menu.addMenuItem(new PopupMenu.PopupMenuItem(state.title, {reactive: false}));
+        menu.addMenuItem(new PopupMenu.PopupMenuItem(`Cheesecloth • ${state.title}`, {reactive: false}));
         if (state.detail)
             menu.addMenuItem(new PopupMenu.PopupMenuItem(state.detail, {reactive: false}));
         if (state.actions.length)

@@ -7,6 +7,11 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- The GNOME panel menu starts with two lines instead of three. The first
+  line shows "Cheesecloth" and the state, such as "Cheesecloth • Connected".
+
 ## [0.5.0-beta.0-4] - 2026-10-14
 
 ### Fixed
