@@ -7,6 +7,8 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.0-4] - 2026-10-14
+
 ### Fixed
 
 - The Cheesecloth icon in the GNOME panel is now the same size as the other
