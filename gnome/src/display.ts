@@ -27,6 +27,9 @@ export interface MenuState {
     approvals?: number;
 }
 
+// The space between the parts of a menu header line, such as "Cheesecloth  •  Connected".
+export const SEPARATOR = '  •  ';
+
 export function menuState(status: Status, proposals: Proposal[] = []): MenuState {
     switch (status.phase) {
     case 'none':
@@ -39,7 +42,7 @@ export function menuState(status: Status, proposals: Proposal[] = []): MenuState
         const warnings = status.warnings.length;
         return {
             title: warnings ? 'Connected, with warnings' : 'Connected',
-            detail: `${status.name} • ${warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : `${status.members} member${status.members === 1 ? '' : 's'}`}`,
+            detail: `${status.name}${SEPARATOR}${warnings ? `${warnings} warning${warnings === 1 ? '' : 's'}` : `${status.members} member${status.members === 1 ? '' : 's'}`}`,
             level: warnings ? 'attention' : 'good',
             actions: ['status', 'peers', ...(proposals.length ? ['approvals' as const] : [])],
             approvals: proposals.length,

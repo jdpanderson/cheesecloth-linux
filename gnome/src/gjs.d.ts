@@ -346,7 +346,7 @@ declare module 'resource:///org/gnome/shell/ui/panelMenu.js' {
             connect(signal: 'open-state-changed', callback: (menu: unknown, open: boolean) => void): number;
             removeAll(): void;
             addMenuItem(item: PopupMenuItem | PopupSeparatorMenuItem): void;
-            addAction(label: string, callback: () => void): void;
+            addAction(label: string, callback: () => void, icon?: string): void;
         };
         add_child(child: Icon): void;
         destroy(): void;

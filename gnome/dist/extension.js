@@ -5,7 +5,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { ApiError, call } from './api.js';
-import { errorState, menuState } from './display.js';
+import { SEPARATOR, errorState, menuState } from './display.js';
 const ACTIONS = {
     status: 'Status…',
     peers: 'Peers…',
@@ -15,6 +15,11 @@ const ACTIONS = {
     cancel: 'Cancel Join…',
     retry: 'Retry Leave…',
     logs: 'Open Logs…',
+};
+// Icon names from the icon theme, shown to the left of the menu item.
+const ICONS = {
+    status: 'dialog-information-symbolic',
+    peers: 'system-users-symbolic',
 };
 export default class CheeseclothExtension extends Extension {
     _indicator = null;
@@ -68,14 +73,14 @@ export default class CheeseclothExtension extends Extension {
             return;
         const menu = this._indicator.menu;
         menu.removeAll();
-        menu.addMenuItem(new PopupMenu.PopupMenuItem(`Cheesecloth • ${state.title}`, { reactive: false }));
+        menu.addMenuItem(new PopupMenu.PopupMenuItem(`Cheesecloth${SEPARATOR}${state.title}`, { reactive: false }));
         if (state.detail)
             menu.addMenuItem(new PopupMenu.PopupMenuItem(state.detail, { reactive: false }));
         if (state.actions.length)
             menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         for (const action of state.actions) {
             const name = action === 'approvals' ? `Approvals (${state.approvals})…` : ACTIONS[action];
-            menu.addAction(name, () => this._open(action));
+            menu.addAction(name, () => this._open(action), ICONS[action]);
         }
     }
     _open(page) {

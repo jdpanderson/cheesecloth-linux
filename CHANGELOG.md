@@ -7,6 +7,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- The Status and Peers items in the GNOME panel menu show an icon.
+- The GNOME panel menu headers have more space around the dot, such as
+  "Cheesecloth  •  Connected".
+
 ## [0.5.0-beta.0-5] - 2026-10-14
 
 ### Changed
