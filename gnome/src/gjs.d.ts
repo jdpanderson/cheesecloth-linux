@@ -73,6 +73,12 @@ declare module 'gi://Gdk?version=4.0' {
     export default Gdk;
 }
 
+declare module 'gi://Pango' {
+    enum EllipsizeMode { NONE, START, MIDDLE, END }
+    const Pango: {EllipsizeMode: typeof EllipsizeMode};
+    export default Pango;
+}
+
 declare module 'gi://Gtk?version=4.0' {
     import type {Display} from 'gi://Gdk?version=4.0';
     export class Widget {
@@ -95,6 +101,7 @@ declare module 'gi://Gtk?version=4.0' {
         set_text(text: string): void;
         get_text(): string;
         set_wrap(value: boolean): void;
+        set_ellipsize(mode: number): void;
     }
     export class Box extends Widget {
         constructor(properties?: {orientation?: number; spacing?: number});
@@ -158,6 +165,7 @@ declare module 'gi://Gtk?version=4.0' {
         present(): void;
         get_clipboard(): Clipboard;
         connect(signal: 'close-request', callback: () => boolean): number;
+        close(): void;
     }
     export class ApplicationWindow extends Window {
         constructor(properties?: {application?: Application; title?: string;

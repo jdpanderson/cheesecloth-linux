@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk?version=4.0';
 import Adw from 'gi://Adw?version=1';
+import Pango from 'gi://Pango';
 import { call } from './api.js';
 import { changeMessage, mapping, pathLevel, shortId } from './display.js';
 const HELP = {
@@ -16,14 +17,14 @@ const HELP = {
     buffer: 'How many acceptors may be unreachable while changes still go through. A larger buffer needs more acceptors before protection starts.',
 };
 const app = new Adw.Application({ application_id: 'ca.janderson.cheesecloth.Gnome', flags: Gio.ApplicationFlags.NON_UNIQUE });
-function label(text, css = '') {
-    const widget = new Gtk.Label({ label: String(text ?? '—'), xalign: 0, wrap: true, selectable: true });
+function label(text, css = '', selectable = true) {
+    const widget = new Gtk.Label({ label: String(text ?? '—'), xalign: 0, wrap: true, selectable });
     if (css)
         widget.add_css_class(css);
     return widget;
 }
 function dot(level) {
-    const widget = label('●');
+    const widget = label('●', '', false);
     setLevel(widget, level);
     return widget;
 }
@@ -55,7 +56,7 @@ function setLevel(widget, level) {
     if (level)
         widget.add_css_class(classes[level]);
 }
-function row(parent, name, value, help = '', level = '') {
+function row(parent, name, value, help = '', level = '', shorten = false) {
     const line = box(10, Gtk.Orientation.HORIZONTAL);
     const title = label(name);
     title.set_size_request(150, -1);
@@ -63,6 +64,11 @@ function row(parent, name, value, help = '', level = '') {
     const detail = label(value);
     setLevel(detail, level);
     detail.set_hexpand(true);
+    if (shorten) {
+        detail.set_wrap(false);
+        detail.set_ellipsize(Pango.EllipsizeMode.MIDDLE);
+        detail.set_tooltip_text(detail.get_text());
+    }
     line.append(detail);
     const hint = help ? { text: help,
         button: new Gtk.Button({ icon_name: 'dialog-information-symbolic' }) } : null;
@@ -76,7 +82,7 @@ function row(parent, name, value, help = '', level = '') {
         line.append(hint.button);
     }
     parent.append(line);
-    return { value: detail, hint };
+    return { value: detail, hint, shorten };
 }
 function page() {
     const content = box(12);
@@ -178,6 +184,13 @@ class Window {
             retry: 'Retry Leave', logs: 'Logs' };
         return titles[this.kind];
     }
+    // Opens another page and closes this one. The new window opens first, so the app keeps running.
+    replace(kind) {
+        if (this.cancellable.is_cancelled())
+            return;
+        new Window(kind);
+        this.window.close();
+    }
     setBody(widget) {
         if (this.body)
             this.root.remove(this.body);
@@ -277,8 +290,8 @@ class Window {
         sidebar.set_size_request(175, -1);
         sidebar.set_margin_top(18);
         sidebar.set_margin_start(12);
-        const addRow = (section, parent, name, value, help = '', level = '') => {
-            this.statusFields.set(`${section}/${name}`, row(parent, name, value, help, level));
+        const addRow = (section, parent, name, value, help = '', level = '', shorten = false) => {
+            this.statusFields.set(`${section}/${name}`, row(parent, name, value, help, level, shorten));
         };
         const addSection = (name, title, level, widget) => {
             stack.add_titled(widget, name, title);
@@ -288,7 +301,8 @@ class Window {
             const indicator = dot(level);
             this.statusDots.set(name, indicator);
             contents.append(indicator);
-            contents.append(label(title));
+            // A selectable label would take the click from the button.
+            contents.append(label(title, '', false));
             entry.set_child(contents);
             entry.connect('clicked', () => stack.set_visible_child_name(name));
             sidebar.append(entry);
@@ -305,8 +319,8 @@ class Window {
         this.statusBadge = overviewBadge;
         overview.append(overviewBadge);
         addRow('overview', overview, 'Node name', status.name);
-        addRow('overview', overview, 'Node ID', status.node_id);
-        addRow('overview', overview, 'Network ID', status.cluster_id);
+        addRow('overview', overview, 'Node ID', status.node_id, '', '', true);
+        addRow('overview', overview, 'Network ID', status.cluster_id, '', '', true);
         addRow('overview', overview, 'Members', status.members);
         addSection('overview', 'Overview', overviewStatus.level, overviewScroll);
         if (status.phase === 'member') {
@@ -318,8 +332,10 @@ class Window {
             addRow('network', network, 'Conditions', `${status.public ? 'public' : 'behind NAT'}, keepalive ${status.keepalive ? `${status.keepalive}s` : 'off'}`);
             network.append(button('Leave Network…', async () => {
                 if (await confirm(this.window, 'Leave the network?', 'This computer leaves and removes its WireGuard interface. It needs a new invite to come back.', 'Leave') &&
-                    !this.cancellable.is_cancelled())
+                    !this.cancellable.is_cancelled()) {
                     await this.leave(false);
+                    await this.refresh();
+                }
             }));
             addSection('network', 'Network', status.public ? 'good' : 'off', networkScroll);
             const [consensusScroll, consensus] = page();
@@ -359,6 +375,8 @@ class Window {
             if (!view)
                 return;
             view.value.set_text(String(value ?? '—'));
+            if (view.shorten)
+                view.value.set_tooltip_text(view.value.get_text());
             setLevel(view.value, level);
             if (view.hint && hint !== undefined) {
                 view.hint.text = hint;
@@ -611,13 +629,13 @@ class Window {
         entry.set_tooltip_text('Invite token');
         content.append(entry);
         const join = button('Join', async () => {
-            await this.run(join, async () => {
+            if (await this.run(join, async () => {
                 const buffer = entry.get_buffer();
                 const token = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), false).trim();
-                const result = await call('join', { token }, this.cancellable);
-                return result.joined ? `Joined. This computer's address is ${result.ipv4}.` :
-                    `Waiting for approval. Members check this node ID: ${result.node_id}`;
-            });
+                await call('join', { token }, this.cancellable);
+                return '';
+            }))
+                this.replace('status');
         });
         content.append(join);
         this.setBody(scroll);
@@ -636,13 +654,14 @@ class Window {
         settings.add(strict);
         content.append(settings);
         const create = button('Create', async () => {
-            await this.run(create, async () => {
+            if (await this.run(create, async () => {
                 const args = { strict_security: strict.get_active() };
                 if (range.get_text().trim())
                     args.ipv4_range = range.get_text().trim();
-                const result = await call('init', args, this.cancellable);
-                return `Created network ${shortId(result.cluster_id)}, ${result.ipv4_range}.`;
-            });
+                await call('init', args, this.cancellable);
+                return '';
+            }))
+                this.replace('status');
         });
         content.append(create);
         this.setBody(scroll);
