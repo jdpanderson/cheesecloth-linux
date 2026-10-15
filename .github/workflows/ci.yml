@@ -39,6 +39,7 @@ jobs:
           node --check gnome/dist/protocol.js
           node --check gnome/dist/extension.js
           node --check gnome/dist/app.js
+          node --check gnome/dist/widgets.js
           npm run --prefix gnome test
 
   gnome:
@@ -73,6 +74,9 @@ jobs:
       - name: Test GJS socket client
         run: npm run --prefix gnome test:gjs
       - name: Test Adwaita widgets
+        # GJS only logs errors in signal handlers, so make every critical fail the test.
+        env:
+          G_DEBUG: fatal-criticals
         run: dbus-run-session -- xvfb-run -a gjs -m gnome/tests/widgets.gjs.mjs
       - name: Test packaged Shell extension
         env:
@@ -258,6 +262,7 @@ jobs:
           dpkg-deb --extract dist/gnome-shell-extension-cheesecloth_*.deb "$RUNNER_TEMP/extension"
           test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/extension.js"
           test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/extension/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/widgets.js"
           test -f "$RUNNER_TEMP/extension/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           apt-get install -y ./dist/cheesecloth_*.deb
           cheesecloth --version
@@ -301,6 +306,7 @@ jobs:
           tar -xf dist/gnome-shell-extension-cheesecloth-*.pkg.tar.zst -C "$RUNNER_TEMP/package"
           test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/extension.js"
           test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/protocol.js"
+          test -f "$RUNNER_TEMP/package/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca/widgets.js"
           test -f "$RUNNER_TEMP/package/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"
           pacman -U --noconfirm dist/cheesecloth-[0-9]*.pkg.tar.zst
           cheesecloth --version

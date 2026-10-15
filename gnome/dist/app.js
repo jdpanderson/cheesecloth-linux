@@ -4,7 +4,8 @@ import Gtk from 'gi://Gtk?version=4.0';
 import Adw from 'gi://Adw?version=1';
 import Pango from 'gi://Pango';
 import { call } from './api.js';
-import { changeMessage, mapping, pathLevel, shortId } from './display.js';
+import { changeMessage, mapping, shortId } from './display.js';
+import { PeerTable, setLevel } from './widgets.js';
 const HELP = {
     consensus: 'Available: enough acceptors can be reached to agree on changes. Changes paused: too few can be reached, so joins, removals and setting changes wait. Traffic between members keeps flowing.',
     version: "The version of the network's agreed state (members and settings) that this computer holds. It goes up with each change.",
@@ -47,15 +48,6 @@ function button(text, action) {
     widget.connect('clicked', action);
     return widget;
 }
-function setLevel(widget, level) {
-    const classes = {
-        good: 'success', attention: 'warning', broken: 'error', off: 'dim-label', info: 'accent',
-    };
-    for (const name of Object.values(classes))
-        widget.remove_css_class(name);
-    if (level)
-        widget.add_css_class(classes[level]);
-}
 function row(parent, name, value, help = '', level = '', shorten = false) {
     const line = box(10, Gtk.Orientation.HORIZONTAL);
     const title = label(name);
@@ -84,12 +76,16 @@ function row(parent, name, value, help = '', level = '', shorten = false) {
     parent.append(line);
     return { value: detail, hint, shorten };
 }
-function page() {
+function padded() {
     const content = box(12);
     content.set_margin_top(18);
     content.set_margin_bottom(18);
     content.set_margin_start(18);
     content.set_margin_end(18);
+    return content;
+}
+function page() {
+    const content = padded();
     const scroll = new Gtk.ScrolledWindow({ hexpand: true, vexpand: true });
     scroll.set_child(content);
     return [scroll, content];
@@ -131,13 +127,9 @@ class Window {
     statusBadge;
     statusWarnings;
     lastWarnings = '';
-    peerList = null;
+    peerTable = null;
     peerCount;
     peerEmpty;
-    peerIds = '';
-    peerCells = new Map();
-    peerActions = new Map();
-    peers = new Map();
     approvalContent = null;
     approvalIds = '';
     approvalFields = new Map();
@@ -145,7 +137,7 @@ class Window {
     constructor(kind) {
         this.kind = kind;
         this.window = new Adw.ApplicationWindow({ application: app, title: 'Cheesecloth',
-            default_width: kind === 'status' || kind === 'peers' ? 760 : 540,
+            default_width: kind === 'peers' ? 1000 : kind === 'status' ? 760 : 540,
             default_height: kind === 'status' || kind === 'peers' ? 540 : 400 });
         this.root = box(0);
         const toolbar = new Adw.ToolbarView();
@@ -436,8 +428,8 @@ class Window {
         section('connectivity', mappings.includes('attention') ? 'attention' : mappings.includes('good') ? 'good' : 'off');
     }
     showPeers(peers) {
-        if (!this.peerList) {
-            const [scroll, content] = page();
+        if (!this.peerTable) {
+            const content = padded();
             const top = box(10, Gtk.Orientation.HORIZONTAL);
             this.peerCount = label('');
             this.peerCount.add_css_class('title-4');
@@ -446,89 +438,23 @@ class Window {
             content.append(top);
             this.peerEmpty = label('No other members yet.');
             content.append(this.peerEmpty);
-            this.peerList = box(12);
-            content.append(this.peerList);
+            this.peerTable = new PeerTable({
+                copy: text => this.copy(text),
+                remove: (peer, more) => this.removePeer(peer, more),
+            });
+            content.append(this.peerTable.widget);
             content.append(label('Up: recent handshake • Other states need attention • No path: broken'));
-            this.setBody(scroll);
+            this.setBody(content);
         }
-        this.peers = new Map(peers.map(peer => [peer.node_id, peer]));
         this.peerCount.set_text(`${peers.length} member${peers.length === 1 ? '' : 's'}`);
         this.peerEmpty.set_visible(peers.every(peer => peer.this_node));
-        const list = this.peerList;
-        const ids = JSON.stringify(peers.map(peer => peer.node_id));
-        if (ids !== this.peerIds) {
-            this.peerIds = ids;
-            this.peerCells.clear();
-            this.peerActions.clear();
-            let child;
-            while ((child = list.get_first_child()))
-                list.remove(child);
-            peers.forEach(peer => {
-                const card = box(8);
-                card.add_css_class('card');
-                card.set_margin_top(4);
-                card.set_margin_bottom(4);
-                const heading = box(8, Gtk.Orientation.HORIZONTAL);
-                const name = label('', 'heading');
-                name.set_hexpand(true);
-                heading.append(name);
-                const cells = [name];
-                this.peerCells.set(peer.node_id, cells);
-                const actions = box(8);
-                const popover = new Gtk.Popover();
-                popover.add_css_class('menu');
-                popover.set_child(actions);
-                const more = new Gtk.MenuButton({ icon_name: 'view-more-symbolic', popover });
-                more.set_tooltip_text(`Actions for ${peer.name}`);
-                this.peerActions.set(peer.node_id, more);
-                actions.append(button('Copy IP', () => {
-                    this.copy(this.peers.get(peer.node_id)?.ipv4 ?? null);
-                    popover.popdown();
-                }));
-                actions.append(button('Copy Name', () => {
-                    this.copy(this.peers.get(peer.node_id)?.name ?? null);
-                    popover.popdown();
-                }));
-                if (!peer.this_node)
-                    actions.append(button('Remove…', async () => {
-                        popover.popdown();
-                        const current = this.peers.get(peer.node_id);
-                        if (current && await confirm(this.window, `Remove ${current.name} from the network?`, `Node ID ${current.node_id}`, 'Remove') && !this.cancellable.is_cancelled())
-                            await this.run(more, async () => changeMessage(await call('remove', { node: current.node_id }, this.cancellable), current.name));
-                        await this.refresh();
-                    }));
-                heading.append(more);
-                card.append(heading);
-                for (const title of ['IPv4', 'Role', 'Control', 'Path', 'State', 'Endpoint', 'Handshake'])
-                    cells.push(row(card, title, '').value);
-                list.append(card);
-            });
-        }
-        peers.forEach(peer => {
-            this.peerActions.get(peer.node_id)?.set_tooltip_text(`Actions for ${peer.name}`);
-            const cells = [
-                `${peer.name}${peer.this_node ? ' (this computer)' : ''} • ${peer.present ? 'Present' : 'Absent'}`,
-                peer.ipv4 || '—',
-                peer.acceptor ? 'Acceptor' : peer.relay ? 'Relay' : 'Member',
-                peer.connected ? 'Yes' : peer.present ? 'Relay' : 'No',
-                peer.path,
-                peer.path_detail,
-                peer.wg_endpoint || '—',
-                peer.handshake_age_secs == null ? '—' : `${peer.handshake_age_secs}s ago`,
-            ];
-            cells.forEach((text, column) => {
-                const cell = this.peerCells.get(peer.node_id)?.[column];
-                if (!cell)
-                    return;
-                cell.set_text(text);
-                if (column === 0)
-                    setLevel(cell, peer.present ? 'good' : 'off');
-                if (column === 3)
-                    setLevel(cell, peer.connected ? 'good' : 'off');
-                if (column === 5)
-                    setLevel(cell, pathLevel(peer.path_state, peer.this_node));
-            });
-        });
+        this.peerTable.update(peers);
+    }
+    async removePeer(peer, more) {
+        if (await confirm(this.window, `Remove ${peer.name} from the network?`, `Node ID ${peer.node_id}`, 'Remove') &&
+            !this.cancellable.is_cancelled())
+            await this.run(more, async () => changeMessage(await call('remove', { node: peer.node_id }, this.cancellable), peer.name));
+        await this.refresh();
     }
     copy(text) {
         this.window.get_clipboard().set_text(text || '');

@@ -1,5 +1,27 @@
 // Interfaces for the GNOME APIs used by this extension.
+declare module 'gi://GObject' {
+    export class GType {}
+    export class ParamSpec {
+        static jsobject(name: string, nick: string, blurb: string, flags: number): ParamSpec;
+    }
+    export class Object {
+        static $gtype: GType;
+        connect(signal: string, callback: () => void): number;
+        disconnect(id: number): void;
+        notify(name: string): void;
+    }
+    export function registerClass<T extends abstract new () => Object>(
+        meta: {GTypeName?: string; Properties?: Record<string, ParamSpec>}, klass: T): T;
+    export const ParamFlags: {READWRITE: number};
+    const GObject: {
+        Object: typeof Object; ParamSpec: typeof ParamSpec; ParamFlags: typeof ParamFlags;
+        registerClass: typeof registerClass;
+    };
+    export default GObject;
+}
+
 declare module 'gi://Gio' {
+    import type {GType, Object as GObject} from 'gi://GObject';
     export interface AsyncResult {}
     export class Cancellable {
         cancel(): void;
@@ -39,13 +61,18 @@ declare module 'gi://Gio' {
         get_successful(): boolean;
         force_exit(): void;
     }
+    export class ListStore {
+        constructor(properties: {item_type: GType});
+        get_n_items(): number;
+        splice(position: number, removals: number, additions: GObject[]): void;
+    }
     export const ApplicationFlags: {NON_UNIQUE: number};
     export const SubprocessFlags: {NONE: number; STDOUT_PIPE: number; STDERR_PIPE: number};
     const Gio: {
         Cancellable: typeof Cancellable; UnixSocketAddress: typeof UnixSocketAddress;
         SocketClient: typeof SocketClient; DataInputStream: typeof DataInputStream;
         Subprocess: typeof Subprocess; ApplicationFlags: typeof ApplicationFlags;
-        SubprocessFlags: typeof SubprocessFlags;
+        SubprocessFlags: typeof SubprocessFlags; ListStore: typeof ListStore;
     };
     export default Gio;
 }
@@ -81,6 +108,8 @@ declare module 'gi://Pango' {
 
 declare module 'gi://Gtk?version=4.0' {
     import type {Display} from 'gi://Gdk?version=4.0';
+    import type {ListStore} from 'gi://Gio';
+    import type {Object as GObject} from 'gi://GObject';
     export class Widget {
         add_css_class(name: string): void;
         remove_css_class(name: string): void;
@@ -97,7 +126,7 @@ declare module 'gi://Gtk?version=4.0' {
         get_root(): Window | null;
     }
     export class Label extends Widget {
-        constructor(properties?: {label?: string; xalign?: number; wrap?: boolean; selectable?: boolean});
+        constructor(properties?: {label?: string; xalign?: number; wrap?: boolean; selectable?: boolean; ellipsize?: number});
         set_text(text: string): void;
         get_text(): string;
         set_wrap(value: boolean): void;
@@ -160,6 +189,36 @@ declare module 'gi://Gtk?version=4.0' {
     export class Clipboard {
         set_text(text: string): void;
     }
+    export class Sorter {
+        changed(change: number): void;
+    }
+    export class CustomSorter extends Sorter {
+        static new(compare: (a: GObject, b: GObject) => number): CustomSorter;
+    }
+    export class SortListModel {
+        constructor(properties: {model: ListStore; sorter: Sorter | null});
+    }
+    export class NoSelection {
+        constructor(properties: {model: SortListModel});
+    }
+    export class ColumnViewCell {
+        get_item(): GObject | null;
+        get_child(): Widget | null;
+        set_child(child: Widget): void;
+    }
+    export class SignalListItemFactory {
+        connect(signal: 'setup' | 'bind' | 'unbind' | 'teardown',
+            callback: (factory: SignalListItemFactory, cell: ColumnViewCell) => void): number;
+    }
+    export class ColumnViewColumn {
+        constructor(properties: {title: string; factory: SignalListItemFactory; resizable?: boolean;
+            expand?: boolean; sorter?: Sorter});
+    }
+    export class ColumnView extends Widget {
+        append_column(column: ColumnViewColumn): void;
+        get_sorter(): Sorter | null;
+        set_model(model: NoSelection): void;
+    }
     export class Window extends Widget {
         set_child(child: Widget): void;
         present(): void;
@@ -190,6 +249,7 @@ declare module 'gi://Gtk?version=4.0' {
         static add_provider_for_display(display: Display, provider: CssProvider, priority: number): void;
     }
     export const Orientation: {VERTICAL: number; HORIZONTAL: number};
+    export const SorterChange: {DIFFERENT: number};
     export const WrapMode: {CHAR: number};
     export const ButtonsType: {CLOSE: number; NONE: number};
     export const ResponseType: {CANCEL: number; OK: number};
@@ -203,6 +263,9 @@ declare module 'gi://Gtk?version=4.0' {
         MessageDialog: typeof MessageDialog; CssProvider: typeof CssProvider; StyleContext: typeof StyleContext;
         Orientation: typeof Orientation; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
         ResponseType: typeof ResponseType; STYLE_PROVIDER_PRIORITY_APPLICATION: number;
+        CustomSorter: typeof CustomSorter; SortListModel: typeof SortListModel; NoSelection: typeof NoSelection;
+        SignalListItemFactory: typeof SignalListItemFactory; ColumnViewColumn: typeof ColumnViewColumn;
+        ColumnView: typeof ColumnView; SorterChange: typeof SorterChange;
     };
     export default Gtk;
 }

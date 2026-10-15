@@ -7,6 +7,11 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- The GNOME Peers window shows peers in a table. You can sort and resize its
+  columns.
+
 ### Fixed
 
 - The section buttons in the GNOME Status window now work when you click
