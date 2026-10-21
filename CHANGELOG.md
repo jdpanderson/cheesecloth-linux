@@ -7,6 +7,15 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.2-1] - 2026-10-21
+
+### Changed
+
+- The packages build cheesecloth 0.5.0-beta.2. It has dependency updates and
+  a Windows fix, and nothing that changes the packages on Linux.
+
+## [0.5.0-beta.1-1] - 2026-10-15
+
 ### Added
 
 - Member permissions in the GNOME app. The Invite window has a checkbox for
