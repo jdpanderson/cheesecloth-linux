@@ -7,8 +7,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.4-1] - 2026-10-22
+
 ### Changed
 
+- The packages build cheesecloth 0.5.0-beta.4. It has a Windows fix, and
+  nothing that changes the packages on Linux.
 - The package builds compile the GNOME extension from its TypeScript source
   with the distribution's compiler. The compiled JavaScript is no longer
   committed.
