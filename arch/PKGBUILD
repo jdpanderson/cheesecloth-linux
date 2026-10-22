@@ -15,7 +15,7 @@ arch=('x86_64' 'aarch64')
 url='https://github.com/jdpanderson/cheesecloth'
 # Cheesecloth is MIT; the others are the bundled crates' (THIRD-PARTY-NOTICES.md).
 license=('MIT' 'Apache-2.0' 'BSD-2-Clause' 'BSD-3-Clause' 'ISC' 'MPL-2.0' 'Unicode-3.0')
-makedepends=('cargo' 'git')
+makedepends=('cargo' 'git' 'typescript')
 options=('!lto')
 source=("cheesecloth::git+${CHEESECLOTH_REPO:-$url.git}#$_ref")
 b2sums=('SKIP')
@@ -29,6 +29,8 @@ build() {
   cd cheesecloth
   export CARGO_TARGET_DIR=target
   cargo build --frozen --release -p cheesecloth
+  # The GNOME source is in this repository, not in cheesecloth.
+  tsc -p "$startdir/../gnome/tsconfig.json" --outDir "$srcdir/gnome"
 }
 
 check() {
@@ -56,12 +58,12 @@ package_gnome-shell-extension-cheesecloth() {
   depends=("cheesecloth=$pkgver-$pkgrel" 'gnome-shell' 'gjs' 'gtk4' 'libadwaita' 'systemd')
   local extension="$pkgdir/usr/share/gnome-shell/extensions/cheesecloth-gnome@janderson.ca"
   install -Dm644 "$startdir/../gnome/metadata.json" "$extension/metadata.json"
-  install -Dm644 "$startdir/../gnome/dist/extension.js" "$extension/extension.js"
-  install -Dm644 "$startdir/../gnome/dist/api.js" "$extension/api.js"
-  install -Dm644 "$startdir/../gnome/dist/display.js" "$extension/display.js"
-  install -Dm644 "$startdir/../gnome/dist/protocol.js" "$extension/protocol.js"
-  install -Dm644 "$startdir/../gnome/dist/app.js" "$extension/app.js"
-  install -Dm644 "$startdir/../gnome/dist/widgets.js" "$extension/widgets.js"
+  install -Dm644 "$srcdir/gnome/extension.js" "$extension/extension.js"
+  install -Dm644 "$srcdir/gnome/api.js" "$extension/api.js"
+  install -Dm644 "$srcdir/gnome/display.js" "$extension/display.js"
+  install -Dm644 "$srcdir/gnome/protocol.js" "$extension/protocol.js"
+  install -Dm644 "$srcdir/gnome/app.js" "$extension/app.js"
+  install -Dm644 "$srcdir/gnome/widgets.js" "$extension/widgets.js"
   install -Dm644 "$startdir/../gnome/cheesecloth-symbolic.svg" "$extension/cheesecloth-symbolic.svg"
   install -Dm644 "$startdir/../gnome/cheesecloth.conf" "$pkgdir/usr/lib/sysusers.d/cheesecloth.conf"
   install -Dm644 "$startdir/../gnome/10-gnome.conf" "$pkgdir/usr/lib/systemd/system/cheesecloth.service.d/10-gnome.conf"

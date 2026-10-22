@@ -64,10 +64,12 @@ session if the daemon uses a custom socket path. If `/etc/default/cheesecloth`
 already sets `--api-group`, remove that option before installing the extension
 package; its service drop-in supplies the `cheesecloth` group.
 
-The GNOME source is in `gnome/src/*.ts`. Run `npm install --prefix gnome`,
-then `npm run --prefix gnome build` after changing it. Commit the generated
-`gnome/dist/*.js` files with the source. Debian and Arch install those
-generated files, so package builds do not need Node.js.
+The GNOME source is in `gnome/src/*.ts`. The package builds compile it to
+JavaScript with the distribution's TypeScript compiler: `node-typescript` on
+Debian and `typescript` on Arch. Debian 13 has TypeScript 4.9, so the source
+must not use newer TypeScript features. To build and test it by hand, run
+`npm install --prefix gnome`, then `npm run --prefix gnome build`. The
+output in `gnome/dist/` is not committed.
 
 ## Building by hand
 
@@ -76,8 +78,8 @@ generated files, so package builds do not need Node.js.
 The build runs in a cheesecloth checkout at the pinned release tag (or
 commit), with this repository's `debian/` in place of any `debian/` it has.
 It needs `cargo` and `rustc` 1.95 or later (on Debian 13, from
-trixie-backports) and network access, because cargo downloads the crates that
-`Cargo.lock` names.
+trixie-backports), `node-typescript`, and network access, because cargo
+downloads the crates that `Cargo.lock` names.
 
 ```sh
 git clone --branch v<release from cheesecloth.pin> https://github.com/jdpanderson/cheesecloth.git
