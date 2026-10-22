@@ -166,9 +166,10 @@ class Window {
 
     constructor(kind: PageKind) {
         this.kind = kind;
+        // The invite window holds the permissions and a long token, so it is larger than the other small windows.
         this.window = new Adw.ApplicationWindow({application: app, title: 'Cheesecloth',
-            default_width: kind === 'peers' ? 1000 : kind === 'status' ? 760 : 540,
-            default_height: kind === 'status' || kind === 'peers' ? 540 : 400});
+            default_width: kind === 'peers' ? 1000 : kind === 'status' ? 760 : kind === 'invite' ? 640 : 540,
+            default_height: kind === 'status' || kind === 'peers' ? 540 : kind === 'invite' ? 680 : 400});
         this.root = box(0);
         const toolbar = new Adw.ToolbarView();
         const header = new Adw.HeaderBar();
@@ -512,9 +513,16 @@ class Window {
         const vote = permission('Voter', 'Be an acceptor, and take joins to the network.');
         const relay = permission('Relay', 'Relay messages for other members.');
         content.append(options);
-        const token = label('');
-        token.set_wrap(true);
-        content.append(token);
+        // The token is long. It scrolls in its own box, so the window does not need to.
+        const token = new Gtk.TextView({editable: false, cursor_visible: false, monospace: true,
+            wrap_mode: Gtk.WrapMode.CHAR, top_margin: 6, bottom_margin: 6, left_margin: 6, right_margin: 6});
+        token.set_tooltip_text('Invite token');
+        const tokenScroll = new Gtk.ScrolledWindow({vexpand: true, min_content_height: 120,
+            hscrollbar_policy: Gtk.PolicyType.NEVER});
+        tokenScroll.set_child(token);
+        tokenScroll.add_css_class('frame');
+        tokenScroll.set_visible(false);
+        content.append(tokenScroll);
         const remaining = label('');
         content.append(remaining);
         const create = button('Create Invite', async () => {
@@ -524,7 +532,8 @@ class Window {
                 }}, this.cancellable);
                 if (this.cancellable.is_cancelled())
                     return '';
-                token.set_text(this.invite.token);
+                token.get_buffer().set_text(this.invite.token, -1);
+                tokenScroll.set_visible(true);
                 create.set_label('Create Another');
                 copy.set_sensitive(true);
                 this.updateCountdown(remaining);
