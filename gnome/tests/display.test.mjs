@@ -1,14 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {changeMessage, errorState, mapping, menuState, pathLevel, permissionBadges, permissionNames, roleBadges, shortId} from '../dist/display.js';
+import {changeMessage, errorState, mapping, menuState, pathLight, permissionBadges, permissionNames, roleBadges, shortId} from '../dist/display.js';
 
-test('peer path colors follow stable state codes', () => {
-    assert.equal(pathLevel('up', false), 'good');
-    assert.equal(pathLevel('no_path', false), 'broken');
-    assert.equal(pathLevel('no_handshake', false), 'attention');
-    assert.equal(pathLevel('waiting_for_removal', false), 'attention');
-    assert.equal(pathLevel('future_state', false), 'off');
-    assert.equal(pathLevel('up', true), 'off');
+test('peer path lights follow stable state codes, and name the state', () => {
+    const light = (path_state, path_detail = path_state, this_node = false) =>
+        pathLight({path_state, path_detail, this_node});
+    assert.equal(light('up').level, 'good');
+    assert.equal(light('no_handshake').level, 'attention');
+    assert.equal(light('waiting_for_removal').level, 'attention');
+    assert.equal(light('stale').level, 'degraded');
+    assert.equal(light('no_path').level, 'broken');
+    assert.equal(light('no_path', 'no path; retry in 20s').tooltip,
+        'No path; retry in 20s\nNAT hole punching failed, so there is no path to this member. It is tried again later.');
+    // A state from a newer daemon is grey, and its tooltip is the daemon's detail.
+    assert.deepEqual(light('future_state', 'something new'), {level: 'off', tooltip: 'Something new'});
+    // Inherited object keys are not states.
+    assert.equal(light('constructor').level, 'off');
+    assert.deepEqual(light('self', '-', true), {level: 'off', tooltip: 'This computer'});
 });
 
 test('menu actions follow the daemon phase and proposals', () => {

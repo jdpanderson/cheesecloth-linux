@@ -1,4 +1,5 @@
 import GObject from 'gi://GObject';
+import Gdk from 'gi://Gdk?version=4.0';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 import Pango from 'gi://Pango';
@@ -6,12 +7,27 @@ import type {ListStore} from 'gi://Gio';
 import type {Box, Button, ColumnView, ColumnViewCell, ColumnViewColumn, Label, MenuButton, ScrolledWindow,
     SignalListItemFactory, Widget} from 'gi://Gtk?version=4.0';
 
-import {pathLevel, permissionBadges, permissionNames, roleBadges, type Badge, type Level} from './display.js';
+import {LEVEL_ORDER, pathLight, permissionBadges, permissionNames, roleBadges, type Badge, type Level,
+    type Light} from './display.js';
 import type {Peer} from './types.js';
 
 const LEVEL_CLASSES: Record<Level, string> = {
-    good: 'success', attention: 'warning', broken: 'error', off: 'dim-label', info: 'accent',
+    good: 'success', attention: 'warning', degraded: 'cheesecloth-degraded', broken: 'error', off: 'dim-label',
+    info: 'accent',
 };
+
+// Adwaita has no orange style class, so `degraded` uses orange 3 of the GNOME palette.
+const STYLES = '.cheesecloth-degraded { color: #ff7800; }';
+
+// Call once, before the first window.
+export function loadStyles(): void {
+    const display = Gdk.Display.get_default();
+    if (!display)
+        return;
+    const provider = new Gtk.CssProvider();
+    provider.load_from_string(STYLES);
+    Gtk.StyleContext.add_provider_for_display(display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+}
 
 export function setLevel(widget: Widget, level: Level | ''): void {
     for (const name of Object.values(LEVEL_CLASSES))
@@ -54,6 +70,12 @@ interface BadgeColumn {
     key: (peer: Peer) => string;
 }
 
+// A column of colored lights, each with a tooltip. It sorts problems first.
+interface LightColumn {
+    title: string;
+    light: (peer: Peer) => Light;
+}
+
 function control(peer: Peer): string {
     return peer.connected ? 'Yes' : peer.present ? 'Relay' : 'No';
 }
@@ -63,15 +85,16 @@ function ipv4Key(peer: Peer): string | null {
     return peer.ipv4 ? peer.ipv4.split('.').map(part => part.padStart(3, '0')).join('.') : null;
 }
 
-const COLUMNS: (Column | BadgeColumn)[] = [
-    {title: 'Name', text: peer => `${peer.name}${peer.this_node ? ' (this computer)' : ''}`, key: peer => peer.name},
+const COLUMNS: (Column | BadgeColumn | LightColumn)[] = [
+    {title: 'Name', text: peer => `${peer.name}${peer.this_node ? ' (this computer)' : ''}`, key: peer => peer.name,
+        expand: true},
     {title: 'Present', text: peer => peer.present ? 'Yes' : 'No', level: peer => peer.present ? 'good' : 'off'},
     {title: 'IPv4', text: peer => peer.ipv4 || '—', key: ipv4Key},
     {title: 'Role', badges: roleBadges, key: peer => roleBadges(peer).map(badge => badge.tooltip).join()},
     {title: 'Permissions', badges: peer => permissionBadges(peer.permissions), key: peer => permissionNames(peer.permissions)},
     {title: 'Control', text: control, level: peer => peer.connected ? 'good' : 'off'},
     {title: 'Path', text: peer => peer.path},
-    {title: 'State', text: peer => peer.path_detail, level: peer => pathLevel(peer.path_state, peer.this_node), expand: true},
+    {title: 'State', light: pathLight},
     {title: 'Endpoint', text: peer => peer.wg_endpoint || '—', key: peer => peer.wg_endpoint},
     {title: 'Handshake', text: peer => peer.handshake_age_secs == null ? '—' : `${peer.handshake_age_secs}s ago`,
         key: peer => peer.handshake_age_secs},
@@ -144,6 +167,23 @@ function badgeColumn(column: BadgeColumn): ColumnViewColumn {
         sorter: Gtk.CustomSorter.new((a, b) => compare(column.key((a as PeerItem).peer), column.key((b as PeerItem).peer)))});
 }
 
+function lightColumn(column: LightColumn): ColumnViewColumn {
+    const factory = new Gtk.SignalListItemFactory();
+    factory.connect('setup', (_factory, cell) => {
+        cell.set_child(new Gtk.Label({label: '●', xalign: 0.5}));
+    });
+    onPeer(factory, (cell, peer) => {
+        const dot = cell.get_child() as Label;
+        const light = column.light(peer);
+        dot.set_tooltip_text(light.tooltip);
+        dot.update_property([Gtk.AccessibleProperty.LABEL], [light.tooltip]);
+        setLevel(dot, light.level);
+    });
+    const key = (item: unknown): number => LEVEL_ORDER.indexOf(column.light((item as PeerItem).peer).level);
+    return new Gtk.ColumnViewColumn({title: column.title, factory, resizable: true,
+        sorter: Gtk.CustomSorter.new((a, b) => compare(key(a), key(b)))});
+}
+
 export interface PeerActions {
     copy(text: string): void;
     // `button` is the row's menu button, which stays disabled while the removal runs. Without it, the
@@ -199,7 +239,8 @@ export class PeerTable {
         this.store = new Gio.ListStore({item_type: PeerItem.$gtype});
         this.view = new Gtk.ColumnView();
         for (const column of COLUMNS)
-            this.view.append_column('badges' in column ? badgeColumn(column) : textColumn(column));
+            this.view.append_column('badges' in column ? badgeColumn(column) :
+                'light' in column ? lightColumn(column) : textColumn(column));
         this.view.append_column(actionsColumn(actions));
         this.view.set_model(new Gtk.NoSelection({model: new Gtk.SortListModel({model: this.store, sorter: this.view.get_sorter()})}));
         this.widget = new Gtk.ScrolledWindow({hexpand: true, vexpand: true});

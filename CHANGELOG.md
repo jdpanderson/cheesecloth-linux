@@ -9,6 +9,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ### Changed
 
+- The State column in the GNOME Peers window shows a light for each member:
+  green when traffic flows, yellow while the path is being set up, orange
+  when the path has had no handshake for over 200 seconds, and red when
+  there is no path. Its tooltip names the state and says what it means.
+  Sorting by State puts problems first. The line that explained the states
+  below the table is gone.
 - In the GNOME Peers window, the Invite button is a "+" button at the right,
   as add buttons are in other GNOME apps. Its tooltip says what it does, and
   the Join window says to press it.

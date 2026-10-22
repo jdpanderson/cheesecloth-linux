@@ -1,22 +1,39 @@
 import type {Change, Peer, Permissions, PortMapping, Proposal, Status} from './types.js';
 
-export type Level = 'good' | 'attention' | 'broken' | 'off' | 'info';
+// `degraded` is between `attention` and `broken`: something worked, and may have stopped.
+export type Level = 'good' | 'attention' | 'degraded' | 'broken' | 'off' | 'info';
 
-export function pathLevel(state: string, thisNode: boolean): Level {
-    if (thisNode)
-        return 'off';
-    switch (state) {
-    case 'up': return 'good';
-    case 'no_path': return 'broken';
-    case 'stale':
-    case 'no_handshake':
-    case 'waiting_to_punch':
-    case 'offer_sent':
-    case 'punching':
-    case 'waiting_for_removal': return 'attention';
-    default: return 'off';
-    }
+// A light in the peers table: its color, and a tooltip that names the state and says what it means.
+export interface Light {
+    level: Level;
+    tooltip: string;
 }
+
+// The color and meaning of each WireGuard path state. Green: traffic flows. Yellow: the path is being set up.
+// Orange: the path worked, but has had no handshake for a while. Red: there is no path.
+const PATH_STATES = new Map<string, [Level, string]>([
+    ['up', ['good', 'WireGuard had a recent handshake with this member, so traffic flows.']],
+    ['not_configured', ['attention', 'WireGuard has no entry for this member yet.']],
+    ['no_handshake', ['attention', 'WireGuard has not had a handshake with this member yet.']],
+    ['waiting_to_punch', ['attention', 'A NAT hole punch is due, and waits for its turn.']],
+    ['offer_sent', ['attention', 'This computer offered a NAT hole punch, and waits for the answer.']],
+    ['punching', ['attention', 'Both sides are opening their NATs to reach each other.']],
+    ['waiting_for_removal', ['attention', 'The old path is being removed from WireGuard before the next try.']],
+    ['stale', ['degraded', 'The last WireGuard handshake was more than 200 seconds ago. The path may be down.']],
+    ['no_path', ['broken', 'NAT hole punching failed, so there is no path to this member. It is tried again later.']],
+]);
+
+export function pathLight(peer: Pick<Peer, 'path_state' | 'path_detail' | 'this_node'>): Light {
+    if (peer.this_node)
+        return {level: 'off', tooltip: 'This computer'};
+    const detail = peer.path_detail.charAt(0).toUpperCase() + peer.path_detail.slice(1);
+    const known = PATH_STATES.get(peer.path_state);
+    // A state from a newer daemon has no color here, but its detail still names it.
+    return known ? {level: known[0], tooltip: `${detail}\n${known[1]}`} : {level: 'off', tooltip: detail};
+}
+
+// Problems first: red, orange, yellow, green, then grey.
+export const LEVEL_ORDER: Level[] = ['broken', 'degraded', 'attention', 'good', 'info', 'off'];
 export type MenuAction = 'status' | 'peers' | 'approvals' | 'create' | 'join' |
     'cancel' | 'retry' | 'logs';
 export interface MenuState {

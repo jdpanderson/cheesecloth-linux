@@ -125,6 +125,7 @@ declare module 'gi://Gtk?version=4.0' {
         set_margin_end(value: number): void;
         set_size_request(width: number, height: number): void;
         set_tooltip_text(text: string): void;
+        update_property(properties: number[], values: unknown[]): void;
         get_first_child(): Widget | null;
         get_root(): Window | null;
     }
@@ -194,7 +195,6 @@ declare module 'gi://Gtk?version=4.0' {
     }
     export class Image extends Widget {
         constructor(properties?: {icon_name?: string});
-        update_property(properties: number[], values: unknown[]): void;
     }
     export class CheckButton extends Widget {
         constructor(properties?: {active?: boolean; valign?: number});
