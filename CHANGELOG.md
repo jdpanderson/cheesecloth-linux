@@ -7,6 +7,11 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- The GNOME Invite window is larger. It shows the invite token in a box
+  that scrolls by itself, so the window no longer needs to scroll.
+
 ## [0.5.0-beta.4-1] - 2026-10-22
 
 ### Changed

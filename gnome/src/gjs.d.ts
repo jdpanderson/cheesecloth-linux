@@ -154,7 +154,8 @@ declare module 'gi://Gtk?version=4.0' {
         popdown(): void;
     }
     export class ScrolledWindow extends Widget {
-        constructor(properties?: {hexpand?: boolean; vexpand?: boolean});
+        constructor(properties?: {hexpand?: boolean; vexpand?: boolean; min_content_height?: number;
+            hscrollbar_policy?: number});
         set_child(child: Widget): void;
     }
     export class HeaderBar extends Widget {
@@ -178,9 +179,11 @@ declare module 'gi://Gtk?version=4.0' {
         get_start_iter(): unknown;
         get_end_iter(): unknown;
         get_text(start: unknown, end: unknown, include_hidden: boolean): string;
+        set_text(text: string, length: number): void;
     }
     export class TextView extends Widget {
-        constructor(properties?: {wrap_mode?: number; vexpand?: boolean});
+        constructor(properties?: {wrap_mode?: number; vexpand?: boolean; editable?: boolean; cursor_visible?: boolean;
+            monospace?: boolean; top_margin?: number; bottom_margin?: number; left_margin?: number; right_margin?: number});
         get_buffer(): TextBuffer;
     }
     export class Entry extends Widget {
@@ -264,6 +267,7 @@ declare module 'gi://Gtk?version=4.0' {
     export const AccessibleProperty: {LABEL: number};
     export const SorterChange: {DIFFERENT: number};
     export const WrapMode: {CHAR: number};
+    export const PolicyType: {NEVER: number};
     export const ButtonsType: {CLOSE: number; NONE: number};
     export const ResponseType: {CANCEL: number; OK: number};
     export const STYLE_PROVIDER_PRIORITY_APPLICATION: number;
@@ -274,7 +278,7 @@ declare module 'gi://Gtk?version=4.0' {
         TextView: typeof TextView; Entry: typeof Entry; Switch: typeof Switch; CheckButton: typeof CheckButton; Image: typeof Image;
         ApplicationWindow: typeof ApplicationWindow; Application: typeof Application;
         MessageDialog: typeof MessageDialog; CssProvider: typeof CssProvider; StyleContext: typeof StyleContext;
-        Orientation: typeof Orientation; Align: typeof Align; AccessibleProperty: typeof AccessibleProperty; WrapMode: typeof WrapMode; ButtonsType: typeof ButtonsType;
+        Orientation: typeof Orientation; Align: typeof Align; AccessibleProperty: typeof AccessibleProperty; WrapMode: typeof WrapMode; PolicyType: typeof PolicyType; ButtonsType: typeof ButtonsType;
         ResponseType: typeof ResponseType; STYLE_PROVIDER_PRIORITY_APPLICATION: number;
         CustomSorter: typeof CustomSorter; SortListModel: typeof SortListModel; NoSelection: typeof NoSelection;
         SignalListItemFactory: typeof SignalListItemFactory; ColumnViewColumn: typeof ColumnViewColumn;
