@@ -7,6 +7,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Changed
+
+- The package builds compile the GNOME extension from its TypeScript source
+  with the distribution's compiler. The compiled JavaScript is no longer
+  committed.
+
 ## [0.5.0-beta.3-1] - 2026-10-21
 
 ### Changed

@@ -33,7 +33,6 @@ jobs:
         run: |
           npm run --prefix gnome check
           npm run --prefix gnome build
-          git diff --exit-code -- gnome/dist
           node --check gnome/dist/api.js
           node --check gnome/dist/display.js
           node --check gnome/dist/protocol.js
@@ -71,6 +70,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Build GNOME JavaScript
+        run: |
+          npm install --prefix gnome --ignore-scripts --no-package-lock --no-audit --no-fund
+          npm run --prefix gnome build
       - name: Test GJS socket client
         run: npm run --prefix gnome test:gjs
       - name: Test Adwaita widgets
@@ -226,7 +229,7 @@ jobs:
           printf '%s\n' 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential debhelper git ca-certificates procps \
+            build-essential debhelper git ca-certificates procps node-typescript \
             cargo/trixie-backports rustc/trixie-backports
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -283,7 +286,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git rust openresolv
+        run: pacman -Syu --noconfirm --needed git rust typescript openresolv
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

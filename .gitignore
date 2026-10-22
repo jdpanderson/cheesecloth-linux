@@ -8,3 +8,4 @@
 /arch/pkg/
 /arch/*.pkg.tar.*
 /gnome/node_modules/
+/gnome/dist/

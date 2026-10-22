@@ -19,10 +19,11 @@ endif
 	dh $@
 
 override_dh_auto_clean:
-	rm -rf debian/cargo-home debian/target
+	rm -rf debian/cargo-home debian/target gnome/dist
 
 override_dh_auto_build:
 	cargo build --release --locked $(CARGO_JOBS) -p cheesecloth
+	tsc -p gnome/tsconfig.json
 
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
