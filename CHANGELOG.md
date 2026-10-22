@@ -7,6 +7,13 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.5-1] - 2026-10-22
+
+### Changed
+
+- The packages build cheesecloth 0.5.0-beta.5. It has a Windows fix, and
+  nothing that changes the packages on Linux.
+
 ## [0.5.0-beta.4-2] - 2026-10-22
 
 ### Changed
