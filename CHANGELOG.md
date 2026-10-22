@@ -9,6 +9,9 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ### Changed
 
+- In the GNOME Peers window, the Invite button is a "+" button at the right,
+  as add buttons are in other GNOME apps. Its tooltip says what it does, and
+  the Join window says to press it.
 - The GNOME Invite window is larger. It shows the invite token in a box
   that scrolls by itself, so the window no longer needs to scroll.
 
