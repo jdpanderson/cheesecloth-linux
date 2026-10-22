@@ -460,12 +460,18 @@ class Window {
             const top = box(10, Gtk.Orientation.HORIZONTAL);
             this.peerCount = label('');
             this.peerCount.add_css_class('title-4');
+            this.peerCount.set_hexpand(true);
             top.append(this.peerCount);
             // A member's permissions never change, so the first reply decides what this window offers.
             // Only an admin may invite or remove.
             const admin = peers.some(peer => peer.this_node && peer.permissions.admin);
-            if (admin)
-                top.append(button('Invite…', () => new Window('invite')));
+            if (admin) {
+                // An add button, at the right as in other GNOME apps.
+                const invite = new Gtk.Button({icon_name: 'list-add-symbolic'});
+                invite.set_tooltip_text('Invite a new member');
+                invite.connect('clicked', () => new Window('invite'));
+                top.append(invite);
+            }
             content.append(top);
             this.peerEmpty = label('No other members yet.');
             content.append(this.peerEmpty);
@@ -615,7 +621,7 @@ class Window {
         if (this.body)
             return;
         const [scroll, content] = page();
-        content.append(label('Paste the token from Peers > Invite on a member.'));
+        content.append(label('On a member, open Peers and press + to make an invite. Paste its token here.'));
         const entry = new Gtk.TextView({wrap_mode: Gtk.WrapMode.CHAR, vexpand: true});
         entry.set_tooltip_text('Invite token');
         content.append(entry);
