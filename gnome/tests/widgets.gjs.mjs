@@ -78,6 +78,17 @@ waitFor(() => ['Acceptor: votes on changes now', 'Relay: relays messages for oth
     'Voter: may be an acceptor, and take joins to the network', 'Member: may use the network and leave']
     .every(text => tooltips(table.widget).includes(text)), 'each role and permission icon');
 waitFor(() => texts(table.widget).includes('Remove…'), 'a Remove item');
+// The State column is a light whose tooltip names the state and says what it means.
+function lights(widget) {
+    const found = widget instanceof Gtk.Label && widget.get_text() === '●' ? [widget] : [];
+    for (let child = widget.get_first_child(); child; child = child.get_next_sibling())
+        found.push(...lights(child));
+    return found;
+}
+table.update([peer('alpha', {this_node: true}),
+    peer('beta', {path_state: 'no_path', path_detail: 'no path; retry in 20s'})]);
+waitFor(() => lights(table.widget).some(light => light.has_css_class('error') &&
+    light.get_tooltip_text().startsWith('No path; retry in 20s\n')), 'a red light for no path');
 
 // Without a remove action, as for a member without the admin permission, no row has a Remove item.
 const passive = new PeerTable({copy() {}});

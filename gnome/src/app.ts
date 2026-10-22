@@ -9,7 +9,7 @@ import type {ApplicationWindow} from 'gi://Adw?version=1';
 
 import {call} from './api.js';
 import {changeMessage, mapping, permissionNames, shortId, type Level} from './display.js';
-import {PeerTable, setLevel} from './widgets.js';
+import {PeerTable, loadStyles, setLevel} from './widgets.js';
 import type {Invite, Peer, Proposal, Status} from './types.js';
 
 type PageKind = 'status' | 'peers' | 'approvals' | 'invite' | 'join' | 'create' |
@@ -480,7 +480,6 @@ class Window {
                 remove: admin ? (peer, more) => this.removePeer(peer, more) : undefined,
             });
             content.append(this.peerTable.widget);
-            content.append(label('Up: recent handshake • Other states need attention • No path: broken'));
             this.setBody(content);
         }
         this.peerCount.set_text(`${peers.length} member${peers.length === 1 ? '' : 's'}`);
@@ -730,6 +729,7 @@ class Window {
     }
 }
 
+app.connect('startup', loadStyles);
 app.connect('activate', () => {
     const pages: PageKind[] = ['status', 'peers', 'approvals', 'invite', 'join', 'create', 'cancel', 'retry', 'logs'];
     const requested = ARGV[0] as PageKind;
