@@ -7,9 +7,9 @@
 #   CHEESECLOTH_REPO=file://$(realpath ../../cheesecloth) makepkg -si
 pkgbase=cheesecloth
 pkgname=('cheesecloth' 'gnome-shell-extension-cheesecloth')
-pkgver=0.5.0beta.5
-pkgrel=2
-_ref=tag=v0.5.0-beta.5
+pkgver=0.5.0beta.6
+pkgrel=1
+_ref=tag=v0.5.0-beta.6
 pkgdesc='A lightweight, loose mesh: a peer-to-peer WireGuard cluster'
 arch=('x86_64' 'aarch64')
 url='https://github.com/jdpanderson/cheesecloth'
