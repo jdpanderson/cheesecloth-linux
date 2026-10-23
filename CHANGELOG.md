@@ -7,6 +7,8 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+## [0.5.0-beta.5-2] - 2026-10-22
+
 ### Fixed
 
 - The GNOME app opens each window once. Choosing Status, Peers or another
