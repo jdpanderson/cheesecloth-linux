@@ -66,15 +66,26 @@ declare module 'gi://Gio' {
         get_n_items(): number;
         splice(position: number, removals: number, additions: GObject[]): void;
     }
+    export class ApplicationCommandLine {
+        get_arguments(): string[];
+        done(): void;
+    }
+    export class AppLaunchContext {}
+    export class AppInfo {
+        static create_from_commandline(commandline: string, application_name: string | null, flags: number): AppInfo;
+        launch(files: unknown[], context: AppLaunchContext | null): boolean;
+    }
     export interface Icon {}
     export function icon_new_for_string(name: string): Icon;
-    export const ApplicationFlags: {NON_UNIQUE: number};
+    export const ApplicationFlags: {HANDLES_COMMAND_LINE: number};
+    export const AppInfoCreateFlags: {SUPPORTS_STARTUP_NOTIFICATION: number};
     export const SubprocessFlags: {NONE: number; STDOUT_PIPE: number; STDERR_PIPE: number};
     const Gio: {
         Cancellable: typeof Cancellable; UnixSocketAddress: typeof UnixSocketAddress;
         SocketClient: typeof SocketClient; DataInputStream: typeof DataInputStream;
         Subprocess: typeof Subprocess; ApplicationFlags: typeof ApplicationFlags;
         SubprocessFlags: typeof SubprocessFlags; ListStore: typeof ListStore;
+        AppInfo: typeof AppInfo; AppInfoCreateFlags: typeof AppInfoCreateFlags;
         icon_new_for_string: typeof icon_new_for_string;
     };
     export default Gio;
@@ -83,12 +94,13 @@ declare module 'gi://Gio' {
 declare module 'gi://GLib' {
     export function getenv(name: string): string | null;
     export function get_prgname(): string | null;
+    export function shell_quote(text: string): string;
     export function timeout_add_seconds(priority: number, interval: number, callback: () => boolean): number;
     export function source_remove(id: number): boolean;
     export const PRIORITY_DEFAULT: number;
     export const SOURCE_CONTINUE: boolean;
     const GLib: {
-        getenv: typeof getenv; get_prgname: typeof get_prgname;
+        getenv: typeof getenv; get_prgname: typeof get_prgname; shell_quote: typeof shell_quote;
         timeout_add_seconds: typeof timeout_add_seconds; source_remove: typeof source_remove;
         PRIORITY_DEFAULT: number; SOURCE_CONTINUE: boolean;
     };
@@ -111,7 +123,7 @@ declare module 'gi://Pango' {
 
 declare module 'gi://Gtk?version=4.0' {
     import type {Display} from 'gi://Gdk?version=4.0';
-    import type {ListStore} from 'gi://Gio';
+    import type {ApplicationCommandLine, ListStore} from 'gi://Gio';
     import type {Object as GObject} from 'gi://GObject';
     export class Widget {
         add_css_class(name: string): void;
@@ -246,7 +258,9 @@ declare module 'gi://Gtk?version=4.0' {
     }
     export class Application {
         constructor(properties?: {application_id?: string; flags?: number});
-        connect(signal: 'startup' | 'activate', callback: () => void): number;
+        connect(signal: 'startup', callback: () => void): number;
+        connect(signal: 'command-line',
+            callback: (app: Application, commandLine: ApplicationCommandLine) => number): number;
         run(argv: string[]): number;
     }
     export class MessageDialog extends Window {
@@ -390,3 +404,7 @@ declare module 'resource:///org/gnome/shell/extensions/extension.js' {
 }
 
 declare const ARGV: string[];
+// GNOME Shell's global object. It exists only in the Shell, not in the app.
+declare const global: {
+    create_app_launch_context(timestamp: number, workspace: number): import('gi://Gio').AppLaunchContext;
+};
