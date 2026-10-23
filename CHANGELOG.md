@@ -7,6 +7,12 @@ names the cheesecloth version it packages plus a package revision, such as
 
 ## [Unreleased]
 
+### Fixed
+
+- The GNOME app opens each window once. Choosing Status, Peers or another
+  page again brings its open window to the front. Before, each choice
+  opened a new window in a new process.
+
 ## [0.5.0-beta.5-1] - 2026-10-22
 
 ### Changed

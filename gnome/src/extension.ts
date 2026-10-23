@@ -1,4 +1,5 @@
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -92,10 +93,13 @@ export default class CheeseclothExtension extends Extension {
         }
     }
 
+    // The app keeps one window for each page. If it is running, the new process passes the page to it and exits.
+    // The Shell's launch context gives the process an activation token, so the app may focus a window it already has.
     private _open(page: MenuAction): void {
-        const path = `${this.path}/app.js`;
+        const command = ['gjs', '-m', `${this.path}/app.js`, page].map(GLib.shell_quote).join(' ');
         try {
-            Gio.Subprocess.new(['gjs', '-m', path, page], Gio.SubprocessFlags.NONE);
+            Gio.AppInfo.create_from_commandline(command, 'Cheesecloth', Gio.AppInfoCreateFlags.SUPPORTS_STARTUP_NOTIFICATION)
+                .launch([], global.create_app_launch_context(0, -1));
         } catch (error) {
             Main.notify('Cheesecloth', error instanceof Error ? error.message : String(error));
         }

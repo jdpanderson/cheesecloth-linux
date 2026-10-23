@@ -28,7 +28,21 @@ const HELP = {
     buffer: 'How many acceptors may be unreachable while changes still go through. A larger buffer needs more acceptors before protection starts.',
 };
 
-const app = new Adw.Application({application_id: 'ca.janderson.cheesecloth.Gnome', flags: Gio.ApplicationFlags.NON_UNIQUE});
+// One process runs the app. A later launch passes its command line to that process and exits.
+const app = new Adw.Application({application_id: 'ca.janderson.cheesecloth.Gnome',
+    flags: Gio.ApplicationFlags.HANDLES_COMMAND_LINE});
+
+// The open window of each page. A page has at most one window.
+const windows = new Map<PageKind, Window>();
+
+// Shows the window of a page, opening it if it is not open.
+function show(kind: PageKind): void {
+    const open = windows.get(kind);
+    if (open)
+        open.present();
+    else
+        new Window(kind);
+}
 
 function label(text: unknown, css = '', selectable = true): Label {
     const widget = new Gtk.Label({label: String(text ?? '—'), xalign: 0, wrap: true, selectable});
@@ -181,7 +195,9 @@ class Window {
         this.notice.set_margin_end(18);
         this.root.append(this.notice);
         this.window.set_content(toolbar);
+        windows.set(kind, this);
         this.window.connect('close-request', () => {
+            windows.delete(this.kind);
             if (this.timer)
                 GLib.source_remove(this.timer);
             this.timer = 0;
@@ -202,6 +218,10 @@ class Window {
         }
     }
 
+    present(): void {
+        this.window.present();
+    }
+
     title(): string {
         const titles: Record<PageKind, string> = {status: 'Status', peers: 'Peers', approvals: 'Approvals', invite: 'Invite',
             join: 'Join Network', create: 'Create Network', cancel: 'Cancel Join',
@@ -209,11 +229,11 @@ class Window {
         return titles[this.kind];
     }
 
-    // Opens another page and closes this one. The new window opens first, so the app keeps running.
+    // Shows another page and closes this one. The other window shows first, so the app keeps running.
     replace(kind: PageKind): void {
         if (this.cancellable.is_cancelled())
             return;
-        new Window(kind);
+        show(kind);
         this.window.close();
     }
 
@@ -469,7 +489,7 @@ class Window {
                 // An add button, at the right as in other GNOME apps.
                 const invite = new Gtk.Button({icon_name: 'list-add-symbolic'});
                 invite.set_tooltip_text('Invite a new member');
-                invite.connect('clicked', () => new Window('invite'));
+                invite.connect('clicked', () => show('invite'));
                 top.append(invite);
             }
             content.append(top);
@@ -730,9 +750,13 @@ class Window {
 }
 
 app.connect('startup', loadStyles);
-app.connect('activate', () => {
+// Runs in the first process, for its own launch and for each later one.
+app.connect('command-line', (_app, commandLine) => {
     const pages: PageKind[] = ['status', 'peers', 'approvals', 'invite', 'join', 'create', 'cancel', 'retry', 'logs'];
-    const requested = ARGV[0] as PageKind;
-    new Window(pages.includes(requested) ? requested : 'status');
+    const requested = commandLine.get_arguments()[1] as PageKind;
+    show(pages.includes(requested) ? requested : 'status');
+    // The later process exits now, not when this object is freed.
+    commandLine.done();
+    return 0;
 });
-app.run([GLib.get_prgname() || 'cheesecloth']);
+app.run([GLib.get_prgname() || 'cheesecloth', ...ARGV]);
