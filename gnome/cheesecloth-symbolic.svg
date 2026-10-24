@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="1.805 0.427 13.675 13.675">
-  <!-- The menubar icon of the macOS and Windows apps, with its lines turned into filled shapes.
+  <!-- This repo's menubar.svg, with its lines turned into filled shapes.
        GNOME Shell colors a symbolic icon by setting the fill of every shape, so it cannot draw strokes.
        The viewBox is a square that fits the shapes with no margin and centers them,
        so the icon is the same size as the other symbolic icons in the panel. -->

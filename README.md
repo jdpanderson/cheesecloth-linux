@@ -71,6 +71,10 @@ must not use newer TypeScript features. To build and test it by hand, run
 `npm install --prefix gnome`, then `npm run --prefix gnome build`. The
 output in `gnome/dist/` is not committed.
 
+The panel uses `gnome/cheesecloth-symbolic.svg`, a filled symbolic version of
+the network mark in `gnome/menubar.svg`. Both files are in this repository;
+the extension package includes the symbolic file.
+
 ## Building by hand
 
 ### Debian
